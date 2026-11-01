@@ -3,6 +3,28 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.0] - 2026-11-01
+
+### Agregado
+
+- **Compartir desde la app**: botón en el detalle de una copia con nombre,
+  autor, licencia y descripción. Antes de exportar muestra qué se comparte
+  (ajustes, requisitos, paleta) y qué queda afuera; la portada es opcional y
+  advierte que puede mostrar el fondo.
+- **Aviso de id repetido**: si ya hay un perfil con ese id en la comunidad,
+  sugiere uno alternativo con el autor.
+- La exportación deja `<carpeta>/<id>/profile.json` listo para el repositorio,
+  en lugar de una carpeta `profile-<id>` que había que renombrar.
+- **`themevault publish-profile`**: valida con las mismas reglas que el CI,
+  copia el perfil a un clon del repositorio, regenera `index.json` y deja los
+  comandos de git; con `--pr` crea la rama, la sube y abre el pull request
+  (pide confirmación).
+
+### Corregido
+
+- `export-profile --with-cover` no copiaba la portada: buscaba el archivo un
+  directorio arriba de la copia.
+
 ## [0.2.1] - 2026-11-01
 
 ### Corregido
@@ -194,6 +216,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.3.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.3.0
 [0.2.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.2.1
 [0.2.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.2.0
 [0.1.6]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.6

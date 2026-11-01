@@ -35,9 +35,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--page", choices=("gallery", "community", "system"), default="gallery")
     parser.add_argument(
         "--action",
-        choices=("none", "restore", "new"),
+        choices=("none", "restore", "share", "new"),
         default="none",
         help="abrir directamente un dialogo (util para capturas y pruebas)",
+    )
+    parser.add_argument(
+        "--share-author",
+        default="",
+        help="autor sugerido al abrir el dialogo de compartir (capturas y pruebas)",
     )
     parser.add_argument("--screenshot", type=Path, default=None, help="capturar la ventana y salir")
     parser.add_argument("--size", default="", help="tamano de ventana para la captura (ej. 1280x1100)")
@@ -82,6 +87,7 @@ def main(argv: list[str] | None = None) -> int:
     engine.rootContext().setContextProperty("initialBackup", args.backup)
     engine.rootContext().setContextProperty("initialPage", args.page)
     engine.rootContext().setContextProperty("initialAction", args.action)
+    engine.rootContext().setContextProperty("initialShareAuthor", args.share_author)
 
     main_qml = QML_DIR / "Main.qml"
     if not main_qml.exists():
@@ -133,6 +139,9 @@ def main(argv: list[str] | None = None) -> int:
             backend.backupCreated.connect(lambda _info: QTimer.singleShot(1200, grab))
             backend.failed.connect(lambda *_: QTimer.singleShot(400, grab))
             QTimer.singleShot(60000, grab)
+        elif args.action == "share":
+            # la vista previa del perfil se arma en un hilo aparte
+            QTimer.singleShot(2800, grab)
         else:
             QTimer.singleShot(1900, grab)
 

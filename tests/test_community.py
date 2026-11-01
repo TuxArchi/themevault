@@ -87,3 +87,13 @@ def test_filtros_por_escritorio_y_texto():
 def test_cover_url():
     assert community.cover_url({"id": "x", "cover": "cover.png"}).endswith("/profiles/x/cover.png")
     assert community.cover_url({"id": "x", "cover": ""}) == ""
+
+
+def test_cached_index_sin_red(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    assert community.cached_index() == []
+
+    payload = {"schema": 1, "profiles": [{"id": "demo-kde", "name": "Demo"}]}
+    community.cache_file().write_text(json.dumps(payload), encoding="utf-8")
+
+    assert [e["id"] for e in community.cached_index()] == ["demo-kde"]

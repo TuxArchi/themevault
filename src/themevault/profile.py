@@ -18,6 +18,7 @@ from pathlib import Path
 
 from .model import KIND_SETTING, Manifest, Item
 from .store import BlobStore
+from .util import is_within
 
 SCHEMA = 1
 
@@ -73,12 +74,17 @@ _UNSAFE = re.compile(r"(^[/~])|(file:)|(\.\./)|([A-Za-z]:\\\\)")
 _SLUG = re.compile(r"[^a-z0-9-]+")
 
 
-def _slug(text: str) -> str:
+def slug(text: str) -> str:
+    """Id publicable: minusculas, numeros y guiones (3-64 caracteres)."""
     normal = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    slug = _SLUG.sub("-", normal.lower()).strip("-")[:48]
-    if len(slug) < 3:
-        slug = (slug + "-style").strip("-")
-    return slug or "perfil"
+    value = _SLUG.sub("-", normal.lower()).strip("-")[:48]
+    if len(value) < 3:
+        value = (value + "-style").strip("-")
+    return value or "perfil"
+
+
+# Compatibilidad con versiones anteriores del modulo.
+_slug = slug
 
 
 def safe_value(value: str) -> bool:
@@ -374,7 +380,7 @@ def build_profile(
     palette = _palette_from_colors(store, manifest, str(requires.get("color_scheme", "")))
 
     profile = Profile(
-        id=_slug(name),
+        id=slug(name),
         name=name.strip(),
         author=author.strip(),
         license=license,
@@ -389,6 +395,17 @@ def build_profile(
     if not include_cover:
         dropped.append("la captura del escritorio no se comparte (puede tener tu fondo)")
     return profile, dropped
+
+
+def default_export_dir() -> Path:
+    """Carpeta visible donde la GUI deja los perfiles listos para publicar."""
+    return Path.home() / "themevault-perfiles"
+
+
+def output_dir(base: Path | None, profile: Profile) -> Path:
+    """`<base>/<id>`: la carpeta tiene que llamarse igual que el id."""
+    root = Path(base).expanduser() if base else default_export_dir()
+    return root / profile.id
 
 
 def export_bundle(
@@ -410,12 +427,17 @@ def export_bundle(
 
     if profile.cover and manifest is not None and store is not None:
         preview = manifest.preview or {}
-        rel = preview.get("cover") or preview.get("screenshot")
-        if rel:
-            base = store.root.parent
-            source = base / rel
-            if source.is_file():
-                (directory / "cover.png").write_bytes(source.read_bytes())
+        rel = str(preview.get("cover") or preview.get("screenshot") or "")
+        base = store.root
+        source = (base / rel) if rel else None
+        if (
+            source is not None
+            and not Path(rel).is_absolute()
+            and ".." not in Path(rel).parts
+            and is_within(source, base)
+            and source.is_file()
+        ):
+            (directory / "cover.png").write_bytes(source.read_bytes())
     return directory / "profile.json"
 
 

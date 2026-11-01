@@ -7,6 +7,7 @@ aparte para que la ventana nunca se congele.
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 from PySide6.QtCore import (
@@ -23,7 +24,15 @@ from PySide6.QtGui import QDesktopServices
 from ..adapters import all_adapters
 from ..backup import BackupEngine
 from ..detect import detect_host, scan_system_assets
-from ..profile import to_manifest as profile_to_manifest
+from ..profile import (
+    build_profile,
+    default_export_dir,
+    export_bundle,
+    output_dir,
+    slug,
+    to_manifest as profile_to_manifest,
+    validate as validate_profile,
+)
 from ..model import CATEGORIES, CATEGORY_LABELS, Manifest
 from ..preview import screenshot_tool
 from .. import community, screen_restore, store_client, widgets_install
@@ -68,6 +77,8 @@ STATUS_TEXT = {
     "store_install": "Instalando desde la tienda…",
     "community": "Cargando la comunidad…",
     "community_apply": "Aplicando el perfil…",
+    "profile_preview": "Preparando el perfil…",
+    "profile_export": "Exportando el perfil…",
 }
 
 
@@ -86,6 +97,8 @@ class Backend(QObject):
     storeInstalled = Signal("QVariantMap")
     communityProfiles = Signal("QVariantList")
     communityApplied = Signal("QVariantMap")
+    profilePreviewed = Signal("QVariantMap")
+    profileExported = Signal("QVariantMap")
     failed = Signal(str, str)
 
     def __init__(self, root: Path | None = None, parent: QObject | None = None):
@@ -123,6 +136,10 @@ class Backend(QObject):
     @Property(str, constant=True)
     def rootPath(self) -> str:  # noqa: N802
         return str(self.engine.root)
+
+    @Property(str, constant=True)
+    def exportDir(self) -> str:  # noqa: N802
+        return str(default_export_dir())
 
     # --------------------------------------------------------------- comandos
 
@@ -286,6 +303,92 @@ class Backend(QObject):
 
         self._submit("community_apply", work)
 
+    @Slot(str, str, str, str, str, bool)
+    def profilePreview(  # noqa: N802
+        self,
+        backup_id: str,
+        name: str,
+        author: str,
+        license_id: str,
+        description: str,
+        include_cover: bool,
+    ) -> None:
+        def work() -> dict:
+            manifest, store, profile, dropped = self._build_profile(
+                backup_id, name, author, license_id, description, include_cover
+            )
+            cover = ""
+            preview = manifest.preview or {}
+            rel = preview.get("cover") or preview.get("screenshot")
+            if include_cover and rel and (store.root / rel).is_file():
+                cover = QUrl.fromLocalFile(str(store.root / rel)).toString()
+
+            taken = any(str(e.get("id", "")) == profile.id for e in community.cached_index())
+            suggested = ""
+            if taken and author.strip():
+                suggested = f"{profile.id[:44]}-{slug(author.strip())[:16]}".rstrip("-")[:63]
+
+            return {
+                "id": profile.id,
+                "name": profile.name,
+                "author": profile.author,
+                "license": profile.license,
+                "desktop": profile.desktop,
+                "description": profile.description,
+                "palette": profile.palette,
+                "requires": profile.requires,
+                "settings": profile.settings,
+                "settingsCount": len(profile.settings),
+                "dropped": dropped,
+                "problems": validate_profile(profile),
+                "cover": cover,
+                "hasCover": bool(cover),
+                "idTaken": taken,
+                "suggestedId": suggested,
+            }
+
+        self._submit("profile_preview", work)
+
+    @Slot(str, str, str, str, str, bool, str)
+    def profileExport(  # noqa: N802
+        self,
+        backup_id: str,
+        name: str,
+        author: str,
+        license_id: str,
+        description: str,
+        include_cover: bool,
+        destination: str,
+    ) -> None:
+        def work() -> dict:
+            manifest, store, profile, dropped = self._build_profile(
+                backup_id, name, author, license_id, description, include_cover
+            )
+            problems = validate_profile(profile)
+            if problems:
+                raise RuntimeError("revisá el perfil: " + "; ".join(problems))
+
+            base = Path(destination).expanduser() if destination.strip() else None
+            out = output_dir(base, profile)
+            if out.exists():
+                shutil.rmtree(out)
+            export_bundle(profile, out, manifest=manifest, store=store)
+            return {
+                "path": str(out),
+                "id": profile.id,
+                "settings": len(profile.settings),
+                "cover": bool(profile.cover),
+                "dropped": dropped,
+            }
+
+        self._submit("profile_export", work)
+
+    @Slot(str)
+    def openExportFolder(self, path: str) -> None:  # noqa: N802
+        target = Path(path).expanduser()
+        if target.is_dir():
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(target)))
+
     @Slot(str)
     def deleteBackup(self, backup_id: str) -> None:  # noqa: N802
         try:
@@ -386,6 +489,7 @@ class Backend(QObject):
             "error": "",
             "id": manifest.id,
             "title": manifest.label or pretty_date(manifest.created),
+            "label": manifest.label or "",
             "created": pretty_date(manifest.created),
             "de": manifest.de,
             "deLabel": de_label(manifest.de),
@@ -433,6 +537,28 @@ class Backend(QObject):
         }
 
     # ---------------------------------------------------------------- interno
+
+    def _build_profile(
+        self,
+        backup_id: str,
+        name: str,
+        author: str,
+        license_id: str,
+        description: str,
+        include_cover: bool,
+    ):
+        manifest = self.engine.resolve(backup_id)
+        store = self.engine.store(manifest.id)
+        profile, dropped = build_profile(
+            manifest,
+            store,
+            name=name.strip() or manifest.label or "Mi estilo",
+            author=author.strip(),
+            license=license_id,
+            description=description.strip(),
+            include_cover=include_cover,
+        )
+        return manifest, store, profile, dropped
 
     def _tools(self) -> list[dict]:
         tools = [
@@ -488,6 +614,10 @@ class Backend(QObject):
             self.communityProfiles.emit(result)
         elif action == "community_apply":
             self.communityApplied.emit(result)
+        elif action == "profile_preview":
+            self.profilePreviewed.emit(result)
+        elif action == "profile_export":
+            self.profileExported.emit(result)
 
     def _on_error(self, action: str, message: str, job: "_Job") -> None:
         self._jobs.discard(job)
@@ -501,6 +631,7 @@ class Backend(QObject):
         return {
             "id": manifest.id,
             "title": manifest.label or pretty_date(manifest.created),
+            "label": manifest.label or "",
             "items": len(manifest.items),
             "sizeText": human_size(manifest.total_size),
         }
@@ -536,6 +667,7 @@ class Backend(QObject):
         return {
             "id": manifest.id,
             "title": manifest.label or pretty_date(manifest.created),
+            "label": manifest.label or "",
             "de": manifest.de,
             "deLabel": de_label(manifest.de),
             "deTotal": len(actions),
