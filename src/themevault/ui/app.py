@@ -32,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--root", type=Path, default=None, help="directorio de copias")
     parser.add_argument("--backup", default="", help="abrir directamente el detalle de una copia")
-    parser.add_argument("--page", choices=("gallery", "system"), default="gallery")
+    parser.add_argument("--page", choices=("gallery", "community", "system"), default="gallery")
     parser.add_argument(
         "--action",
         choices=("none", "restore", "new"),

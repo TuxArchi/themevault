@@ -30,5 +30,5 @@ QtObject {
     readonly property int radiusSmall: 10
     readonly property int radiusInput: 9
 
-    readonly property string appVersion: "0.1.6"
+    readonly property string appVersion: "0.2.0"
 }

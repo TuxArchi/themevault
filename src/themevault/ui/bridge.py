@@ -23,9 +23,10 @@ from PySide6.QtGui import QDesktopServices
 from ..adapters import all_adapters
 from ..backup import BackupEngine
 from ..detect import detect_host, scan_system_assets
+from ..profile import to_manifest as profile_to_manifest
 from ..model import CATEGORIES, CATEGORY_LABELS, Manifest
 from ..preview import screenshot_tool
-from .. import screen_restore, store_client, widgets_install
+from .. import community, screen_restore, store_client, widgets_install
 from ..restore import OK, apply_plan, build_plan, missing_assets
 from ..screens import detect as detect_screens
 from ..widgets import from_items as widgets_from_items
@@ -65,6 +66,8 @@ STATUS_TEXT = {
     "installbt": "Instalando widgets…",
     "store_search": "Buscando en la tienda…",
     "store_install": "Instalando desde la tienda…",
+    "community": "Cargando la comunidad…",
+    "community_apply": "Aplicando el perfil…",
 }
 
 
@@ -81,6 +84,8 @@ class Backend(QObject):
     widgetsInstalled = Signal("QVariantMap")
     storeResults = Signal("QVariantList")
     storeInstalled = Signal("QVariantMap")
+    communityProfiles = Signal("QVariantList")
+    communityApplied = Signal("QVariantMap")
     failed = Signal(str, str)
 
     def __init__(self, root: Path | None = None, parent: QObject | None = None):
@@ -225,6 +230,61 @@ class Backend(QObject):
             return store_client.install(item_id)
 
         self._submit("store_install", work)
+
+    @Slot(bool)
+    def communityRefresh(self, force: bool) -> None:  # noqa: N802
+        def work() -> list:
+            entries = community.fetch_index(force=force)
+            return [
+                {
+                    "id": e.get("id", ""),
+                    "name": e.get("name", ""),
+                    "author": e.get("author", ""),
+                    "desktop": e.get("desktop", ""),
+                    "description": e.get("description", ""),
+                    "palette": e.get("palette") or [],
+                    "license": e.get("license", ""),
+                    "requires": e.get("requires") or {},
+                    "settings": e.get("settings", 0),
+                    "cover": community.cover_url(e),
+                }
+                for e in entries
+            ]
+
+        self._submit("community", work)
+
+    @Slot(str, bool)
+    def communityApply(self, profile_id: str, safety: bool) -> None:  # noqa: N802
+        def work() -> dict:
+            entries = community.fetch_index()
+            entry = next((e for e in entries if e.get("id") == profile_id), None)
+            if entry is None:
+                raise RuntimeError("ese perfil ya no esta en la comunidad")
+
+            profile = community.fetch_profile(entry)
+            manifest = profile_to_manifest(profile)
+            actions = build_plan(manifest, None)
+            report = apply_plan(actions, None, safety=safety, engine_root=self.engine.root)
+
+            assets = scan_system_assets()
+            missing = []
+            for kind in ("icons", "cursor"):
+                name = profile.requires.get(kind)
+                if name and name not in assets.get(kind, []):
+                    missing.append(name)
+
+            return {
+                "id": profile.id,
+                "name": profile.name,
+                "applied": report.applied,
+                "total": len(actions),
+                "blocked": len(report.blocked),
+                "failures": [[n, m] for n, m in report.failures],
+                "missing": missing,
+                "safety": report.safety_id or "",
+            }
+
+        self._submit("community_apply", work)
 
     @Slot(str)
     def deleteBackup(self, backup_id: str) -> None:  # noqa: N802
@@ -424,6 +484,10 @@ class Backend(QObject):
             self.storeResults.emit(result)
         elif action == "store_install":
             self.storeInstalled.emit(result)
+        elif action == "community":
+            self.communityProfiles.emit(result)
+        elif action == "community_apply":
+            self.communityApplied.emit(result)
 
     def _on_error(self, action: str, message: str, job: "_Job") -> None:
         self._jobs.discard(job)
