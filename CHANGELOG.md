@@ -3,6 +3,24 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.1] - 2026-11-01
+
+### Corregido
+
+- **El AppImage abortaba al iniciar** en sesiones donde el bundle no logra crear
+  un contexto OpenGL (por ejemplo KDE Wayland con ciertos drivers): Qt moría con
+  `EGL not available` → `Failed to initialize graphics backend`. Ahora el
+  AppImage usa el renderizador por software, que funciona con cualquier driver.
+  La aceleración sigue disponible con `QT_QUICK_BACKEND=opengl`.
+- El `.desktop` interno del AppImage ahora lleva la versión real en
+  `X-AppImage-Version`.
+
+### Infraestructura
+
+- La verificación del AppImage en CI ya no usa `offscreen`: arranca la
+  aplicación en un X11 virtual (`xvfb-run`) y comprueba que el backend por
+  defecto no dependa de la GPU.
+
 ## [0.1.0] - 2026-11-01
 
 Primer lanzamiento público.
@@ -45,4 +63,5 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.1.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.1
 [0.1.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.0

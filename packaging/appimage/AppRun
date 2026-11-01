@@ -1,4 +1,10 @@
 #!/bin/sh
 # AppRun del AppImage: arranca el binario incluido.
+#
+# El rasterizador por software funciona con cualquier driver (Mesa, NVIDIA,
+# llvmpipe, sin GPU). Con OpenGL, el bundle no logra crear contexto en algunas
+# combinaciones de distribucion/driver y Qt aborta, asi que la aceleracion
+# queda como opt-in:  QT_QUICK_BACKEND=opengl ./ThemeVault-*.AppImage
+export QT_QUICK_BACKEND="${QT_QUICK_BACKEND:-software}"
 HERE="$(dirname "$(readlink -f "$0")")"
 exec "$HERE/usr/bin/ThemeVault" "$@"

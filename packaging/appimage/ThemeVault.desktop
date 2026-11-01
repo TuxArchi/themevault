@@ -9,4 +9,4 @@ Terminal=false
 Categories=Settings;DesktopSettings;
 Keywords=tema;iconos;escritorio;backup;restore;theme;desktop;
 X-AppImage-Name=ThemeVault
-X-AppImage-Version=0.1.0
+X-AppImage-Version=@@VERSION@@

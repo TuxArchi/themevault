@@ -49,9 +49,13 @@ Qué hace el script:
 Prueba rápida:
 
 ```bash
-QT_QPA_PLATFORM=offscreen ./dist/ThemeVault-*.AppImage --screenshot /tmp/app.png
 ./dist/ThemeVault-*.AppImage --version
+QT_QPA_PLATFORM=offscreen ./dist/ThemeVault-*.AppImage --screenshot /tmp/app.png
 ```
+
+El `AppRun` fuerza `QT_QUICK_BACKEND=software`: el bundle no siempre logra crear
+un contexto OpenGL en Wayland y Qt aborta. No quites ese valor sin probar en
+varias distros.
 
 ## GitHub Pages
 

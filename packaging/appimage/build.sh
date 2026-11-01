@@ -47,8 +47,8 @@ mkdir -p "$APPDIR/usr/bin" \
 
 cp -r build/pyinstaller/dist/ThemeVault/. "$APPDIR/usr/bin/"
 
-install -m 644 "$HERE/ThemeVault.desktop" "$APPDIR/ThemeVault.desktop"
-install -m 644 "$HERE/ThemeVault.desktop" "$APPDIR/usr/share/applications/ThemeVault.desktop"
+sed "s/@@VERSION@@/${VERSION}/" "$HERE/ThemeVault.desktop" > "$APPDIR/ThemeVault.desktop"
+install -m 644 "$APPDIR/ThemeVault.desktop" "$APPDIR/usr/share/applications/ThemeVault.desktop"
 install -m 644 src/themevault/ui/qml/themevault.svg "$APPDIR/themevault.svg"
 install -m 644 src/themevault/ui/qml/themevault.svg \
   "$APPDIR/usr/share/icons/hicolor/scalable/apps/themevault.svg"

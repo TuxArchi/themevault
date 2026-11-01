@@ -16,7 +16,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.1.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.1.1**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME y Xfce, con menos horas de
 > prueba real: los reportes son bienvenidos.
 
@@ -55,6 +55,9 @@ chmod +x ThemeVault-*.AppImage
 
 No requiere instalar nada. Pensado para correr desde Ubuntu 22.04 en adelante,
 Debian 12, Fedora 36, Arch y derivados.
+
+> El AppImage usa el renderizador por software para funcionar con cualquier
+> driver. Si querés probar aceleración por GPU: `QT_QUICK_BACKEND=opengl ./ThemeVault-*.AppImage`.
 
 ### pip
 
