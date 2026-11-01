@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.0] - 2026-11-01
+
+### Agregado
+
+- **Autor verificado**: `author` es el usuario de GitHub (sin `@`), validado en
+  la app, el CLI y el CI. El formulario lo prellena si `gh` está autenticado y
+  avisa (sin bloquear) si no coincide.
+- `publish-profile` consulta `gh api user` y aborta si el autor no es la cuenta
+  de esta máquina; `--allow-author` permite las importaciones de maintainers.
+- La comunidad muestra `@autor` con enlace a su perfil de GitHub.
+- Repositorio de perfiles: `tools/check_author.py`, job `author` requerido,
+  `MAINTAINERS`, `CODEOWNERS`, plantilla de PR y `main` protegida con los checks
+  `profiles` y `author`.
+
+### Cambiado
+
+- Un id pertenece a quien lo publicó primero: el CI rechaza altas duplicadas y
+  cambios de autor (apropiarse o transferir un perfil ajeno).
+- Los validadores del CI se ejecutan desde la rama base, así un PR no puede
+  editar las reglas para auto-habilitarse.
+
 ## [0.3.0] - 2026-11-01
 
 ### Agregado
@@ -216,6 +237,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.4.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.4.0
 [0.3.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.3.0
 [0.2.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.2.1
 [0.2.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.2.0

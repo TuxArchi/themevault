@@ -16,7 +16,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.3.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.4.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME y Xfce, con menos horas de
 > prueba real: los reportes son bienvenidos.
 
@@ -181,7 +181,7 @@ themevault rebuild <id>              # regenerar portada y widgets de una copia
 themevault install-widgets <id>      # instalar los widgets que trae la copia
 themevault widgets search "clima"    # buscar en la tienda
 themevault widgets install 2380036   # instalar un widget de la tienda
-themevault export-profile <id> --author vos --name "Mi estilo"   # perfil compartible
+themevault export-profile <id> --author tu-usuario --name "Mi estilo"   # perfil compartible
 themevault verify <id>               # verificar hashes
 themevault delete <id> -y            # borrar
 themevault ui --backup <id>          # abrir la GUI en el detalle
@@ -400,20 +400,26 @@ themevault publish-profile ~/themevault-perfiles/mi-estilo
 
 Valida el perfil con las mismas reglas que el CI, lo copia a `profiles/<id>/`,
 regenera `index.json` y deja los comandos de git listos. Con `--pr` (y
-confirmación) crea la rama, la sube y abre el pull request con `gh`.
+confirmación) crea la rama, la sube y abre el pull request con `gh`. Si `gh`
+está autenticado con otro usuario que el autor, aborta: `--allow-author` es
+solo para maintainers que importan perfiles ajenos.
 
 El flujo de terminal también sirve:
 
 ```bash
-themevault export-profile <tu-copia> --author vos --name "Mi estilo"
+themevault export-profile <tu-copia> --author tu-usuario-de-github --name "Mi estilo"
 themevault publish-profile ./mi-estilo --pr
 ```
 
 Un perfil **nunca** incluye rutas, historial ni archivos de temas: es una
 **lista blanca de campos** (nombre, autor, licencia, escritorio, nombres de
-tema, ajustes de apariencia, paleta y, si lo pedís, la portada). CI valida
-esquema, índice y ausencia de datos personales en
-[themevault-profiles](https://github.com/TuxArchi/themevault-profiles).
+tema, ajustes de apariencia, paleta y, si lo pedís, la portada).
+
+**El autor es tu usuario de GitHub.** El CI de
+[themevault-profiles](https://github.com/TuxArchi/themevault-profiles) valida
+que el `author` coincida con la cuenta que abre el pull request y que no se
+edite un perfil ajeno: si un id ya existe, pertenece a quien lo publicó
+primero. Los maintainers pueden hacer importaciones, y el PR queda registrado.
 
 Qué se comparte exactamente: [docs/PRIVACY.md](docs/PRIVACY.md).
 

@@ -103,6 +103,28 @@ def load(folder: Path) -> tuple[Profile | None, list[str]]:
     return profile, problems
 
 
+def gh_user() -> str:
+    """Usuario autenticado en gh. Cadena vacía si no hay gh o no hay sesión."""
+    gh = shutil.which("gh")
+    if not gh:
+        return ""
+    try:
+        proc = _run([gh, "api", "user", "--jq", ".login"], timeout=20)
+    except PublishError:
+        return ""
+    if proc.returncode != 0:
+        return ""
+    return (proc.stdout or "").strip()
+
+
+def author_mismatch(profile: Profile) -> str:
+    """Avisa si el autor del perfil no es el usuario de gh de esta máquina."""
+    user = gh_user()
+    if user and user.lower() != profile.author.strip().lower():
+        return f"gh está autenticado como @{user} y el perfil dice @{profile.author}"
+    return ""
+
+
 def clone(destination: Path) -> Path:
     """Clona el repositorio de perfiles (solo si todavía no existe)."""
     destination = Path(destination).expanduser()
