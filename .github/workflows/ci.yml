@@ -75,7 +75,7 @@ jobs:
           assert "themevault/ui/qml/Main.qml" in names, "falta Main.qml en el wheel"
           print(f"{len(qml)} archivos QML dentro del wheel")
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/*
