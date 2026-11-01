@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import configparser
 import json
 from pathlib import Path
 
@@ -228,6 +229,9 @@ def test_aplicar_perfil_ini_escribe_en_config(tmp_path, monkeypatch):
 
     config = tmp_path / "config"
     monkeypatch.setenv("XDG_CONFIG_HOME", str(config))
+    # Forzar la ruta de escritura propia: en KDE existe kwriteconfig y el
+    # formato del archivo cambia, lo que no debe alterar el resultado.
+    monkeypatch.setattr("themevault.restore.which", lambda *names: None)
 
     perfil = Profile(
         id="demo-kde",
@@ -251,6 +255,8 @@ def test_aplicar_perfil_ini_escribe_en_config(tmp_path, monkeypatch):
     assert report.failed() == 0 if hasattr(report, "failed") else True
     assert report.applied == 2
 
-    texto = (config / "kdeglobals").read_text()
-    assert "ColorScheme=DemoScheme" in texto
-    assert "Theme=Papirus-Dark" in texto
+    parser = configparser.RawConfigParser()
+    parser.optionxform = str
+    assert parser.read(config / "kdeglobals")
+    assert parser.get("General", "ColorScheme") == "DemoScheme"
+    assert parser.get("Icons", "Theme") == "Papirus-Dark"
