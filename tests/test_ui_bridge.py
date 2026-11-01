@@ -41,6 +41,11 @@ def backend(qapp, tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_DATA_HOME", str(home / ".local" / "share"))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
 
+    # El runner de CI no tiene escritorio: se fuerza KDE en el motor.
+    from themevault.adapters.kde import KdeAdapter
+
+    monkeypatch.setattr("themevault.backup.detected_adapters", lambda: [KdeAdapter()])
+
     from themevault.ui.bridge import Backend
 
     return Backend(tmp_path / "vault"), home

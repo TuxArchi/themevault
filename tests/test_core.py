@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from themevault.adapters.base import Collector
+from themevault.adapters.kde import KdeAdapter
 from themevault.backup import BackupEngine
 from themevault.drivers import read_channel
 from themevault.model import KIND_FILE, Manifest
@@ -59,7 +60,8 @@ def test_backup_and_restore_theme(fake_home):
     (theme / "index.theme").write_text("Name=MiTema\n")
 
     engine = BackupEngine(fake_home / "vault")
-    manifest = engine.create(preview=False, label="test")
+    # En CI no hay escritorio: se fuerza el adaptador para no depender del host.
+    manifest = engine.create(adapters=[KdeAdapter()], preview=False, label="test")
     assert isinstance(manifest, Manifest)
     assert any(item.kind != KIND_FILE for item in manifest.items)
 
