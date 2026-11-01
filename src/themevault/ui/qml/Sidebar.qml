@@ -123,9 +123,16 @@ Rectangle {
 
         NavItem {
             Layout.fillWidth: true
-            label: "Sistema"
+            label: "Comunidad"
             active: bar.currentIndex === 1
             onActivated: bar.navigate(1)
+        }
+
+        NavItem {
+            Layout.fillWidth: true
+            label: "Sistema"
+            active: bar.currentIndex === 2
+            onActivated: bar.navigate(2)
         }
 
         AppButton {

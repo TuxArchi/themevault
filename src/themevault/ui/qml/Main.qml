@@ -60,12 +60,17 @@ ApplicationWindow {
             storageText: backend.storageSummary
 
             onNavigate: function(index) {
-                if (index === 1) {
-                    if (!(stack.currentItem && stack.currentItem.pageId === "system"))
-                        stack.push(systemComponent)
-                } else {
+                if (index === 0) {
                     stack.pop(null)
+                    return
                 }
+                var target = index === 1 ? communityComponent : systemComponent
+                var wanted = index === 1 ? "community" : "system"
+                if (stack.currentItem && stack.currentItem.pageId === wanted)
+                    return
+                if (stack.depth > 1)
+                    stack.pop(null)
+                stack.push(target)
             }
 
             onNewBackup: newDialog.openDialog()
@@ -131,7 +136,12 @@ ApplicationWindow {
 
                 onCurrentItemChanged: {
                     var page = currentItem ? currentItem.pageId : "gallery"
-                    window.navIndex = (page === "system") ? 1 : 0
+                    if (page === "system")
+                        window.navIndex = 2
+                    else if (page === "community")
+                        window.navIndex = 1
+                    else
+                        window.navIndex = 0
                 }
             }
 
@@ -304,6 +314,18 @@ ApplicationWindow {
     }
 
     Component {
+        id: communityComponent
+
+        CommunityPage {
+            pageId: "community"
+
+            onNotify: function(message, error) {
+                window.showToast(message, error ? "error" : "ok")
+            }
+        }
+    }
+
+    Component {
         id: systemComponent
 
         SystemPage {
@@ -316,6 +338,8 @@ ApplicationWindow {
     Component.onCompleted: {
         if (initialBackup && initialBackup.length > 0) {
             stack.push(detailComponent, { backupId: initialBackup })
+        } else if (initialPage === "community") {
+            stack.push(communityComponent)
         } else if (initialPage === "system") {
             stack.push(systemComponent)
         }

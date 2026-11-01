@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.0] - 2026-11-01
+
+### Agregado
+
+- **Sección Comunidad** en la app: grilla de perfiles con portada, búsqueda,
+  filtros por escritorio y detalle con los requisitos de cada uno.
+- **Aplicar un perfil** usa el mismo motor de restauración (plan, punto de
+  retorno y rollback); al terminar avisa si falta instalar algún tema.
+- Cliente del índice con **caché de 24 h** y verificación del **sha256** de
+  cada perfil antes de usarlo.
+- Repositorio separado
+  [themevault-profiles](https://github.com/TuxArchi/themevault-profiles) con
+  `index.json` generado y validador de CI (esquema, rutas, tamaños).
+
+### Notas
+
+- Los temas e iconos no viajan en el perfil: se instalan aparte (distro o
+  tienda).
+- Si el índice recién cambió, el CDN de GitHub puede tardar unos minutos en
+  servirlo; «Actualizar» fuerza la recarga.
+
 ## [0.1.6] - 2026-11-01
 
 ### Agregado
@@ -162,6 +183,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.2.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.2.0
 [0.1.6]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.6
 [0.1.5]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.5
 [0.1.4]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.4

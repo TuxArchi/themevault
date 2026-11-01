@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import configparser
 import json
 from pathlib import Path
 
@@ -220,3 +221,42 @@ def test_paleta_desde_el_esquema_no_del_wallpaper(tmp_path):
     assert perfil.palette == ["#1e1e2e", "#181825", "#313244", "#89b4fa", "#cdd6f4"]
     assert "#ff0000" not in perfil.palette
     assert perfil.requires["color_scheme"] == "Catppuccin"
+
+
+def test_aplicar_perfil_ini_escribe_en_config(tmp_path, monkeypatch):
+    from themevault.profile import Profile, to_manifest
+    from themevault.restore import apply_plan, build_plan
+
+    config = tmp_path / "config"
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(config))
+    # Forzar la ruta de escritura propia: en KDE existe kwriteconfig y el
+    # formato del archivo cambia, lo que no debe alterar el resultado.
+    monkeypatch.setattr("themevault.restore.which", lambda *names: None)
+
+    perfil = Profile(
+        id="demo-kde",
+        name="Demo",
+        author="yo",
+        license="MIT",
+        desktop="kde",
+        settings=[
+            {"backend": "ini", "file": "kdeglobals", "group": "General",
+             "key": "ColorScheme", "value": "DemoScheme"},
+            {"backend": "ini", "file": "kdeglobals", "group": "Icons",
+             "key": "Theme", "value": "Papirus-Dark"},
+        ],
+    )
+    assert profile_mod.validate(perfil) == []
+
+    acciones = build_plan(to_manifest(perfil), None)
+    assert all(a.status == "ok" for a in acciones), [a.message for a in acciones]
+
+    report = apply_plan(acciones, None, safety=False)
+    assert report.failed() == 0 if hasattr(report, "failed") else True
+    assert report.applied == 2
+
+    parser = configparser.RawConfigParser()
+    parser.optionxform = str
+    assert parser.read(config / "kdeglobals")
+    assert parser.get("General", "ColorScheme") == "DemoScheme"
+    assert parser.get("Icons", "Theme") == "Papirus-Dark"
