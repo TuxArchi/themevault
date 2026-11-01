@@ -28,10 +28,16 @@ Un perfil no es una copia. Es una descripción del aspecto, generada con una
 
 ## Cómo se publica
 
-1. La app genera `profile.json` (+ `cover.png` si lo pediste).
-2. **Vos revisás el archivo** antes de nada.
-3. Lo enviás como pull request al repositorio de perfiles.
-4. Un validador automático rechaza rutas, binarios, campos desconocidos y
+1. Desde el detalle de una copia, **Compartir…** (o `themevault
+   export-profile` en la terminal) genera `profile.json` (+ `cover.png` si lo
+   pediste).
+2. La app muestra **qué se comparte y qué se descarta** antes de exportar; la
+   portada es un switch aparte.
+3. **Vos revisás el archivo** antes de nada.
+4. Lo enviás como pull request al repositorio de perfiles. `themevault
+   publish-profile` valida, copia al clon y regenera el índice; con `--pr`
+   abre el pull request (siempre con confirmación).
+5. Un validador automático rechaza rutas, binarios, campos desconocidos y
    tamaños excesivos; después lo revisa una persona.
 
 Sin ese paso manual no hay publicación. La aplicación nunca abre una conexión

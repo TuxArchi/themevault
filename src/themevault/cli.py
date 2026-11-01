@@ -369,7 +369,7 @@ def cmd_rebuild(args: argparse.Namespace) -> int:
 def cmd_export_profile(args: argparse.Namespace) -> int:
     from pathlib import Path
 
-    from .profile import build_profile, export_bundle, validate
+    from .profile import build_profile, export_bundle, output_dir, validate
 
     if not args.author:
         print(red("Falta --author (tu nombre o usuario para acreditar el perfil)."))
@@ -397,7 +397,8 @@ def cmd_export_profile(args: argparse.Namespace) -> int:
             print(f"  · {problem}")
         return 1
 
-    out = Path(args.out) if args.out else Path.cwd() / f"profile-{profile.id}"
+    base = Path(args.out).expanduser() if args.out else Path.cwd()
+    out = output_dir(base, profile)
     export_bundle(profile, out, manifest=manifest, store=store)
 
     print(green("Perfil generado") + f"  {bold(profile.id)}")
@@ -408,6 +409,83 @@ def cmd_export_profile(args: argparse.Namespace) -> int:
     for note in dropped:
         print(dim(f"  · {note}"))
     print(dim("\nRevisá profile.json antes de publicarlo."))
+    print(dim(f"Cuando esté listo: themevault publish-profile {out}"))
+    return 0
+
+
+def cmd_publish_profile(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from . import publish as pub
+
+    folder = Path(args.folder).expanduser()
+    profile, problems = pub.load(folder)
+    if profile is None or problems:
+        print(red("El perfil no se puede publicar:"))
+        for problem in problems:
+            print(f"  · {problem}")
+        return 1
+
+    print(green("Perfil válido") + f"  {bold(profile.id)}")
+    print(
+        f"  {len(profile.settings)} ajustes · escritorio {profile.desktop} · "
+        f"licencia {profile.license} · portada {'sí' if profile.cover else 'no'}"
+    )
+
+    repo = Path(args.repo).expanduser() if args.repo else pub.default_repo()
+    if not (repo / "profiles").is_dir():
+        print(f"Clonando el repositorio de perfiles en {repo}…")
+        try:
+            pub.clone(repo)
+        except pub.PublishError as exc:
+            print(red(f"No se pudo clonar: {exc}"))
+            print(dim("Pasá --repo con un clon existente si ya lo tenés."))
+            return 1
+
+    if profile.id in pub.index_ids(repo) and not args.force:
+        print(red(f"Ya hay un perfil con id «{profile.id}» en el repositorio."))
+        print(dim("Cambiá el nombre, o usá --force para reemplazarlo (solo si es tuyo)."))
+        return 1
+
+    try:
+        target = pub.stage(repo, folder)
+        summary = pub.rebuild_index(repo)
+    except pub.PublishError as exc:
+        print(red(f"No se pudo preparar el repositorio: {exc}"))
+        return 1
+
+    print(green("Perfil copiado") + f"  {target}")
+    for line in summary.splitlines():
+        print(dim(f"  {line}"))
+
+    branch = args.branch or f"perfil/{profile.id}"
+    if not args.pr:
+        print("\nSiguientes pasos:")
+        print(f"  cd {repo}")
+        print(f"  git checkout -b {branch}")
+        print(f"  git add profiles/{profile.id} index.json")
+        print(f'  git commit -m "perfil: {profile.id}"')
+        print(f"  git push -u origin {branch}")
+        print("  gh pr create --fill")
+        return 0
+
+    if not args.yes:
+        answer = input(f"¿Crear la rama {branch}, subirla y abrir el PR? [s/N] ")
+        if answer.strip().lower() not in ("s", "si", "sí", "y", "yes"):
+            print("Cancelado. El perfil quedó copiado en el clon local.")
+            return 1
+
+    try:
+        pub.prepare_branch(repo, profile.id, branch)
+        pub.push_branch(repo, branch)
+        url = pub.open_pr(repo, profile)
+    except pub.PublishError as exc:
+        print(red(f"No se pudo abrir el PR: {exc}"))
+        print(dim("El commit local quedó hecho; revisá la salida de git."))
+        return 1
+
+    print(green("Pull request abierto") + (f"  {url}" if url else ""))
+    print(dim("CI valida esquema, índice y ausencia de datos personales."))
     return 0
 
 
@@ -544,6 +622,23 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--with-cover", action="store_true", help="incluir la captura (puede mostrar tu fondo)")
     export.add_argument("--out", help="carpeta de salida")
     export.set_defaults(func=cmd_export_profile)
+
+    publish = sub.add_parser(
+        "publish-profile",
+        parents=[common],
+        help="valida un perfil y prepara el pull request al repositorio",
+    )
+    publish.add_argument("folder", help="carpeta con profile.json")
+    publish.add_argument("--repo", help="clon del repositorio (por defecto, en la caché)")
+    publish.add_argument("--branch", default="", help="nombre de la rama")
+    publish.add_argument(
+        "--pr", action="store_true", help="crear la rama, subirla y abrir el PR con gh"
+    )
+    publish.add_argument("--yes", action="store_true", help="no pedir confirmación con --pr")
+    publish.add_argument(
+        "--force", action="store_true", help="reemplazar un perfil con el mismo id"
+    )
+    publish.set_defaults(func=cmd_publish_profile)
 
     install = sub.add_parser(
         "install-widgets",

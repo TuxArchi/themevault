@@ -77,6 +77,14 @@ def _write_cache(payload: dict) -> None:
         pass
 
 
+def cached_index() -> list[dict]:
+    """Perfiles del índice en caché (sin red). Lista vacía si no hay."""
+    cached = _read_cache()
+    if cached is None:
+        return []
+    return list(cached.get("profiles") or [])
+
+
 def fetch_index(force: bool = False) -> list[dict]:
     if not force:
         cached = _read_cache()

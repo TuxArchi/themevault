@@ -16,7 +16,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.2.1**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.3.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME y Xfce, con menos horas de
 > prueba real: los reportes son bienvenidos.
 
@@ -102,6 +102,8 @@ Una sola ventana, tres vistas:
 - **Comunidad**: perfiles de otras personas con portada, búsqueda y filtro por
   escritorio. El detalle lista los requisitos («necesita Papirus-Dark») y se
   aplica con el mismo motor de restauración que una copia.
+- **Compartir**: desde el detalle de una copia, genera un perfil publicable con
+  vista previa de lo que se comparte y portada opcional.
 
 Flujos:
 
@@ -365,7 +367,7 @@ Y registrarlo en `adapters/__init__.py`. No hay que tocar el core ni la GUI.
 
 `packaging/themevault.desktop` + `src/themevault/ui/qml/themevault.svg` sirven
 para instalarlo en el menú de aplicaciones. Para capturas automáticas o CI,
-`themevault-gui --screenshot salida.png [--backup <id>] [--action restore|new]`.
+`themevault-gui --screenshot salida.png [--backup <id>] [--action restore|share|new]`.
 
 ---
 
@@ -379,16 +381,39 @@ temas e iconos se instalan aparte (paquete de la distro o tienda).
 
 ![Comunidad](docs/comunidad.png)
 
-### Publicar el tuyo
+### Compartir el tuyo
+
+Desde el detalle de una copia, **Compartir…** abre un formulario con nombre,
+autor, licencia y descripción. Antes de exportar muestra exactamente qué se
+comparte (ajustes, requisitos y paleta) y qué queda afuera; la portada es un
+switch aparte que avisa que puede mostrar tu fondo. Si el id ya existe en la
+comunidad, sugiere otro.
+
+![Compartir](docs/compartir.png)
+
+Exporta en `<carpeta>/<id>/profile.json` (más `cover.png` si lo pediste). Para
+publicarlo, con el repositorio clonado:
+
+```bash
+themevault publish-profile ~/themevault-perfiles/mi-estilo
+```
+
+Valida el perfil con las mismas reglas que el CI, lo copia a `profiles/<id>/`,
+regenera `index.json` y deja los comandos de git listos. Con `--pr` (y
+confirmación) crea la rama, la sube y abre el pull request con `gh`.
+
+El flujo de terminal también sirve:
 
 ```bash
 themevault export-profile <tu-copia> --author vos --name "Mi estilo"
+themevault publish-profile ./mi-estilo --pr
 ```
 
-Genera un `profile.json` con **lista blanca de campos**: sin rutas, sin
-historial y sin la captura salvo que lo pidas. Se publica como pull request en
-[themevault-profiles](https://github.com/TuxArchi/themevault-profiles), donde CI
-valida esquema, índice y ausencia de datos personales.
+Un perfil **nunca** incluye rutas, historial ni archivos de temas: es una
+**lista blanca de campos** (nombre, autor, licencia, escritorio, nombres de
+tema, ajustes de apariencia, paleta y, si lo pedís, la portada). CI valida
+esquema, índice y ausencia de datos personales en
+[themevault-profiles](https://github.com/TuxArchi/themevault-profiles).
 
 Qué se comparte exactamente: [docs/PRIVACY.md](docs/PRIVACY.md).
 

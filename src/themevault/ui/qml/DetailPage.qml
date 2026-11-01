@@ -13,6 +13,7 @@ Item {
 
     signal back()
     signal restoreRequested()
+    signal shareRequested(string notes, string name)
 
     function load() {
         var detail = backend.detail(backupId || "")
@@ -69,6 +70,13 @@ Item {
                 variant: "danger"
                 small: true
                 onClicked: deleteDialog.open()
+            }
+
+            AppButton {
+                text: "Compartir…"
+                variant: "ghost"
+                small: true
+                onClicked: page.shareRequested(page.info.notes || "", page.info.label || "")
             }
 
             AppButton {

@@ -260,3 +260,68 @@ def test_aplicar_perfil_ini_escribe_en_config(tmp_path, monkeypatch):
     assert parser.read(config / "kdeglobals")
     assert parser.get("General", "ColorScheme") == "DemoScheme"
     assert parser.get("Icons", "Theme") == "Papirus-Dark"
+
+
+def test_export_bundle_incluye_portada(tmp_path):
+    from themevault.profile import Profile, export_bundle
+
+    backup = tmp_path / "copia"
+    store = BlobStore(backup)
+    (backup / "preview").mkdir()
+    imagen = b"\x89PNG\r\n\x1a\n" + b"datos"
+    (backup / "preview" / "cover.png").write_bytes(imagen)
+
+    manifest = Manifest(
+        id="copia",
+        created="2026-11-01T10:00:00",
+        host={"de": "kde"},
+        preview={"cover": "preview/cover.png"},
+    )
+    perfil = Profile(
+        id="demo",
+        name="Demo",
+        author="yo",
+        license="MIT",
+        desktop="kde",
+        cover="cover.png",
+    )
+
+    out = tmp_path / "salida"
+    export_bundle(perfil, out, manifest=manifest, store=store)
+
+    assert (out / "profile.json").is_file()
+    assert (out / "cover.png").read_bytes() == imagen
+
+
+def test_export_bundle_ignora_portada_fuera_de_la_copia(tmp_path):
+    from themevault.profile import Profile, export_bundle
+
+    (tmp_path / "secreto.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    backup = tmp_path / "copia"
+    store = BlobStore(backup)
+
+    manifest = Manifest(
+        id="copia",
+        created="2026-11-01T10:00:00",
+        host={"de": "kde"},
+        preview={"cover": "../../secreto.png"},
+    )
+    perfil = Profile(
+        id="demo",
+        name="Demo",
+        author="yo",
+        license="MIT",
+        desktop="kde",
+        cover="cover.png",
+    )
+
+    out = tmp_path / "salida"
+    export_bundle(perfil, out, manifest=manifest, store=store)
+    assert not (out / "cover.png").exists()
+
+
+def test_output_dir_se_llama_como_el_id(tmp_path):
+    from themevault.profile import Profile, output_dir
+
+    perfil = Profile(id="mi-estilo", name="Mi estilo", author="yo", license="MIT", desktop="kde")
+    assert output_dir(tmp_path, perfil) == tmp_path / "mi-estilo"

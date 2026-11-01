@@ -235,6 +235,14 @@ ApplicationWindow {
         id: newDialog
     }
 
+    ShareDialog {
+        id: shareDialog
+
+        onNotify: function(message, error) {
+            window.showToast(message, error ? "error" : "ok")
+        }
+    }
+
     StoreDialog {
         id: storeDialog
 
@@ -310,6 +318,10 @@ ApplicationWindow {
             onBack: stack.pop()
 
             onRestoreRequested: restoreDialog.openFor(backupId)
+
+            onShareRequested: function(notes, name) {
+                shareDialog.openFor(backupId, notes, name, "")
+            }
         }
     }
 
@@ -346,6 +358,10 @@ ApplicationWindow {
 
         if (initialAction === "restore" && initialBackup && initialBackup.length > 0)
             restoreDialog.openFor(initialBackup)
+        else if (initialAction === "share" && initialBackup && initialBackup.length > 0) {
+            var detail = backend.detail(initialBackup)
+            shareDialog.openFor(initialBackup, detail.notes || "", detail.label || "", initialShareAuthor || "")
+        }
         else if (initialAction === "new")
             newDialog.openDialog()
     }
