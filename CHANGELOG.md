@@ -3,6 +3,17 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.1] - 2026-11-01
+
+### Corregido
+
+- **Descargas dentro del AppImage**: el OpenSSL del bundle busca los
+  certificados en rutas de Debian (`/usr/lib/ssl`) que no existen en otras
+  distribuciones, así que la comunidad y la tienda fallaban con
+  `certificate verify failed`. Ahora se usa el almacén de CA del sistema
+  (`net.ssl_context`), y `AppRun` define `SSL_CERT_FILE` si hace falta.
+- La tienda de widgets tenía el mismo problema al descargar un paquete.
+
 ## [0.2.0] - 2026-11-01
 
 ### Agregado
@@ -183,6 +194,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.2.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.2.1
 [0.2.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.2.0
 [0.1.6]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.6
 [0.1.5]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.5

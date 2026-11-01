@@ -15,6 +15,7 @@ import urllib.request
 from pathlib import Path
 
 from . import widgets_install
+from .net import ssl_context
 
 API = "https://api.kde-look.org/ocs/v1"
 USER_AGENT = "ThemeVault (+https://github.com/TuxArchi/themevault)"
@@ -33,7 +34,7 @@ def _get_json(url: str, timeout: int = TIMEOUT) -> dict:
         headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, timeout=timeout, context=ssl_context()) as response:
             payload = response.read(MAX_BYTES)
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise StoreError(f"no se pudo conectar con la tienda: {exc}") from exc
@@ -104,7 +105,9 @@ def details(item_id: int) -> dict:
 def download(url: str, destination: Path) -> Path:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=60) as response, open(destination, "wb") as fh:
+        with urllib.request.urlopen(
+            request, timeout=60, context=ssl_context()
+        ) as response, open(destination, "wb") as fh:
             total = 0
             while True:
                 chunk = response.read(256 * 1024)

@@ -6,5 +6,22 @@
 # combinaciones de distribucion/driver y Qt aborta, asi que la aceleracion
 # queda como opt-in:  QT_QUICK_BACKEND=opengl ./ThemeVault-*.AppImage
 export QT_QUICK_BACKEND="${QT_QUICK_BACKEND:-software}"
+
+# El OpenSSL del bundle se compilo con las rutas de CA de Debian. Si en esta
+# distribucion no existen, apuntamos al almacen del sistema o toda descarga
+# (comunidad, tienda) falla con "certificate verify failed".
+if [ -z "${SSL_CERT_FILE:-}" ]; then
+  for candidate in \
+    /etc/ssl/certs/ca-certificates.crt \
+    /etc/pki/tls/certs/ca-bundle.crt \
+    /etc/ssl/ca-bundle.pem \
+    /etc/ssl/cert.pem; do
+    if [ -f "$candidate" ]; then
+      export SSL_CERT_FILE="$candidate"
+      break
+    fi
+  done
+fi
+
 HERE="$(dirname "$(readlink -f "$0")")"
 exec "$HERE/usr/bin/ThemeVault" "$@"
