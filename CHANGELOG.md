@@ -3,6 +3,24 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.1] - 2026-11-01
+
+### Cambiado
+
+- **Nueva identidad visual**: icono de capturas apiladas, paleta turquesa
+  (`#2dd4bf` → `#0891b2`) y banner para el README.
+- La app usa los nuevos colores de acento (botones con texto oscuro para
+  mantener el contraste) y las capturas de la documentación se regeneraron.
+- Sitio: `og:image` y `og:url` absolutos, `twitter:card`, favicon `.ico`,
+  `apple-touch-icon` y manifest; el icono reemplaza a la «T» del nav.
+
+### Agregado
+
+- `packaging/brand/build_brand.py`: genera iconos PNG/ICO, banner y social
+  preview desde `docs/assets/icon.svg`.
+- Iconos PNG 16→1024 y `favicon.ico`; el AppImage instala 128/256/512 en
+  `hicolor` además del SVG.
+
 ## [0.4.0] - 2026-11-01
 
 ### Agregado
@@ -237,6 +255,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.4.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.4.1
 [0.4.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.4.0
 [0.3.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.3.0
 [0.2.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.2.1

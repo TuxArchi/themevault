@@ -52,6 +52,10 @@ install -m 644 "$APPDIR/ThemeVault.desktop" "$APPDIR/usr/share/applications/Them
 install -m 644 src/themevault/ui/qml/themevault.svg "$APPDIR/themevault.svg"
 install -m 644 src/themevault/ui/qml/themevault.svg \
   "$APPDIR/usr/share/icons/hicolor/scalable/apps/themevault.svg"
+for size in 128 256 512; do
+  install -Dm644 "docs/assets/icon-${size}.png" \
+    "$APPDIR/usr/share/icons/hicolor/${size}x${size}/apps/themevault.png"
+done
 install -m 755 "$HERE/AppRun" "$APPDIR/AppRun"
 
 TOOL="${APPIMAGETOOL:-/tmp/appimagetool}"

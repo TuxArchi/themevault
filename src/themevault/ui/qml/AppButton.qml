@@ -17,7 +17,7 @@ Button {
     contentItem: Text {
         text: control.text
         color: {
-            if (control.variant === "primary") return "#ffffff"
+            if (control.variant === "primary") return "#04231f"
             if (control.variant === "danger") return Theme.danger
             if (!control.enabled) return Theme.textFaint
             return Theme.text
@@ -33,7 +33,7 @@ Button {
         radius: Theme.radiusSmall
         color: {
             if (control.variant === "primary") {
-                return control.hovered ? "#7c4eff" : Theme.accent
+                return control.hovered ? "#5eead4" : Theme.accent
             }
             if (control.variant === "ghost") {
                 return control.hovered ? Theme.surfaceHover : "transparent"

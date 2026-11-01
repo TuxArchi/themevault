@@ -84,7 +84,7 @@ Item {
                     radius: height / 2
                     x: parent.width - width * 0.55
                     y: -height * 0.45
-                    color: "#268b5cf6"
+                    color: "#262dd4bf"
                 }
 
                 Rectangle {
