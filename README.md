@@ -99,6 +99,9 @@ Una sola ventana, tres vistas:
   de cada barra de tareas recortada de la captura) y tarjetas por categoría.
 - **Sistema**: distro, escritorio detectado, adaptadores activos, herramientas
   disponibles, ubicación del almacén.
+- **Comunidad**: perfiles de otras personas con portada, búsqueda y filtro por
+  escritorio. El detalle lista los requisitos («necesita Papirus-Dark») y se
+  aplica con el mismo motor de restauración que una copia.
 
 Flujos:
 
@@ -368,16 +371,26 @@ para instalarlo en el menú de aplicaciones. Para capturas automáticas o CI,
 
 ## Comunidad de perfiles
 
-Está en construcción. La fase 1 (modelo, validación y exportación) ya está:
-`themevault export-profile` genera un `profile.json` con **lista blanca de
-campos** —sin rutas, sin historial y sin la captura salvo que lo pidas— que se
-puede publicar como pull request en el repositorio de perfiles.
+La sección **Comunidad** muestra perfiles publicados por otras personas: grilla
+con portadas, búsqueda, filtros por escritorio y detalle con los requisitos
+(«necesita Papirus-Dark»). Aplicar un perfil usa **el mismo motor de
+restauración** que una copia: plan previo, punto de retorno y rollback. Los
+temas e iconos se instalan aparte (paquete de la distro o tienda).
 
-Qué se comparte y qué no: [docs/PRIVACY.md](docs/PRIVACY.md).
+![Comunidad](docs/comunidad.png)
 
-Las fases siguientes son la sección «Comunidad» dentro de la app (grilla,
-filtros y aplicar un perfil con el mismo motor de restauración) y el asistente
-para publicar.
+### Publicar el tuyo
+
+```bash
+themevault export-profile <tu-copia> --author vos --name "Mi estilo"
+```
+
+Genera un `profile.json` con **lista blanca de campos**: sin rutas, sin
+historial y sin la captura salvo que lo pidas. Se publica como pull request en
+[themevault-profiles](https://github.com/TuxArchi/themevault-profiles), donde CI
+valida esquema, índice y ausencia de datos personales.
+
+Qué se comparte exactamente: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 ---
 
