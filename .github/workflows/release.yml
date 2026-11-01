@@ -56,7 +56,11 @@ jobs:
           "$APPIMAGE" --appimage-extract AppRun >/dev/null
           grep -q 'QT_QUICK_BACKEND' squashfs-root/AppRun
 
-          # 3. renderiza la interfaz completa (QML + dependencias dentro del bundle).
+          # 3. el OpenSSL del bundle no siempre encuentra las CA del sistema:
+          #    AppRun deja el almacén del sistema en SSL_CERT_FILE.
+          grep -q 'SSL_CERT_FILE' squashfs-root/AppRun
+
+          # 4. renderiza la interfaz completa (QML + dependencias dentro del bundle).
           #    La ruta con GPU real no se puede ejercitar aca: por eso el backend
           #    por defecto es software y el paso 2 lo verifica.
           QT_QPA_PLATFORM=offscreen "$APPIMAGE" --root /tmp/vault --screenshot /tmp/app.png

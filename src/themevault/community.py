@@ -15,6 +15,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from .net import ssl_context
 from .profile import Profile, validate
 
 REPO = "https://raw.githubusercontent.com/TuxArchi/themevault-profiles/main"
@@ -48,7 +49,7 @@ def cover_url(entry: dict) -> str:
 def _fetch(url: str, limit: int = MAX_BYTES) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        with urllib.request.urlopen(request, timeout=TIMEOUT, context=ssl_context()) as response:
             data = response.read(limit + 1)
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise CommunityError(f"no se pudo conectar: {exc}") from exc
