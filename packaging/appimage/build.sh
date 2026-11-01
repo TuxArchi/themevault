@@ -21,6 +21,13 @@ echo "python: $(python --version)"
 
 python -m pip install -q --upgrade pyinstaller
 
+# PyInstaller necesita el paquete instalado (no solo el checkout) para poder
+# colectar el codigo y los archivos QML.
+if ! python -c "import themevault" >/dev/null 2>&1; then
+  echo "== instalando themevault =="
+  python -m pip install -q .
+fi
+
 rm -rf build/pyinstaller dist/AppDir
 mkdir -p build/pyinstaller dist
 
