@@ -112,11 +112,11 @@ def _restore_windows(mechanism: str) -> None:
         run(["wmctrl", "-k", "off"], timeout=10)
 
 
-def take_screenshot(out: Path) -> bool:
-    """Captura el escritorio. Intenta ocultar las ventanas primero."""
+def take_screenshot(out: Path, attempts: int = 3) -> tuple[bool, str]:
+    """Captura el escritorio sin ventanas. Devuelve (ok, motivo del fallo)."""
     session = detect_session()
     if screenshot_tool() is None:
-        return False
+        return False, "no hay ninguna herramienta de captura instalada"
 
     if session == "wayland":
         order = [t for t in SHOT_TOOLS if t[0] in ("grim", "gnome-screenshot", "spectacle")]
@@ -131,22 +131,28 @@ def take_screenshot(out: Path) -> bool:
     if mechanism:
         time.sleep(0.7)  # que termine la animacion de minimizar
 
-    # las barras en auto-ocultar no aparecen en la captura: destaparlas un rato
     revealed = reveal_hidden_panels()
     if revealed:
         time.sleep(0.6)
 
+    reason = "sin intentos"
     try:
-        for name, template in order:
-            if not which(name):
-                continue
-            cmd = [part.format(out=str(out)) for part in template]
-            run(cmd, timeout=25)
-            if out.exists() and out.stat().st_size > 0:
+        for attempt in range(attempts):
+            for name, template in order:
+                if not which(name):
+                    continue
+                reason = f"{name}: no genero archivo"
+                cmd = [part.format(out=str(out)) for part in template]
+                run(cmd, timeout=25)
+                if not out.exists() or out.stat().st_size == 0:
+                    continue
                 if not is_blank_image(out):
-                    return True
+                    return True, ""
                 out.unlink(missing_ok=True)
-        return False
+                reason = f"{name}: devolvio una imagen negra"
+            if attempt < attempts - 1:
+                time.sleep(0.7 * (attempt + 1))
+        return False, reason
     finally:
         restore_hidden_panels(revealed)
         if mechanism:
@@ -260,12 +266,44 @@ def _crop_panels(shot: Path, containers: list[dict], preview_dir: Path) -> list[
             {
                 "file": f"preview/panels/{path.name}",
                 "name": panel.get("name", f"Panel {index}"),
+                "screen": int(panel.get("screen") or 0),
                 "summary": container_summary(panel),
                 "width": piece.width,
                 "height": piece.height,
             }
         )
     return found
+
+
+def _custom_screens(containers: list[dict], count: int) -> set[int]:
+    """Indices de pantallas que Plasma administra (panel, dock o escritorio).
+
+    Un escritorio con su fondo y sus iconos ya es parte de la personalizacion
+    de esa pantalla; solo se descartan monitores que Plasma no gestiona.
+    """
+    found: set[int] = set()
+    for container in containers:
+        index = int(container.get("screen") or 0)
+        if 0 <= index < count:
+            found.add(index)
+    return found
+
+
+def _screen_summary(containers: list[dict], index: int) -> tuple[str, list[str], int]:
+    panels = [
+        c.get("name", "Panel")
+        for c in containers
+        if c.get("kind") in ("panel", "dock") and int(c.get("screen") or 0) == index
+    ]
+    widgets = sum(int(c.get("widgets") or 0) for c in containers if int(c.get("screen") or 0) == index)
+    parts = []
+    if panels:
+        parts.append(" y ".join(panels))
+    if widgets:
+        parts.append(f"{widgets} widgets")
+    if not parts:
+        parts.append("Escritorio")
+    return " · ".join(parts), panels, widgets
 
 
 def build_preview(
@@ -282,9 +320,13 @@ def build_preview(
     info: dict = {"palette": []}
 
     shot = preview_dir / "desktop.png"
-    captured = bool(enabled and take_screenshot(shot))
-    if captured:
-        info["screenshot"] = "preview/desktop.png"
+    captured = False
+    if enabled:
+        captured, capture_error = take_screenshot(shot)
+        if captured:
+            info["screenshot"] = "preview/desktop.png"
+        else:
+            info["capture_error"] = capture_error
 
     # --- un recorte por monitor -------------------------------------------
     pieces: list[tuple[Path, screens_mod.Screen]] = []
@@ -293,16 +335,28 @@ def build_preview(
             pieces = screens_mod.crop(shot, screens_mod.detect(), preview_dir / "screens")
         except Exception:
             pieces = []
+    selected: set[int] = set()
     if len(pieces) > 1:
-        info["screens"] = [
-            {
-                "name": screen.name,
-                "file": f"preview/screens/{piece.name}",
-                "width": screen.width,
-                "height": screen.height,
-            }
-            for piece, screen in pieces
-        ]
+        selected = _custom_screens(containers or [], len(pieces)) or set(range(len(pieces)))
+        entries = []
+        for index, (piece, screen) in enumerate(pieces):
+            summary, panels, widgets = _screen_summary(containers or [], index)
+            if index not in selected:
+                continue
+            entries.append(
+                {
+                    "index": index,
+                    "name": screen.name,
+                    "file": f"preview/screens/{piece.name}",
+                    "width": screen.width,
+                    "height": screen.height,
+                    "custom": bool(panels or widgets),
+                    "panels": panels,
+                    "widgets": widgets,
+                    "summary": summary,
+                }
+            )
+        info["screens"] = entries
 
     if captured and containers:
         panels = _crop_panels(shot, containers, preview_dir)
@@ -328,15 +382,16 @@ def build_preview(
     samples: dict = {}
     cover_themes: dict = {}
     if len(pieces) > 1:
-        for index, (piece, _screen) in enumerate(pieces, start=1):
+        chosen = [(i, piece) for i, (piece, _screen) in enumerate(pieces) if i in selected]
+        for rank, (_index, piece) in enumerate(chosen, start=1):
             data = build_cover(
                 None,
                 piece,
                 themes or {},
                 backup_dir,
                 palette=info["palette"],
-                cover_name=f"cover-{index}.png",
-                export_assets=(index == 1),
+                cover_name=f"cover-{rank}.png",
+                export_assets=(rank == 1),
             )
             if not data:
                 continue

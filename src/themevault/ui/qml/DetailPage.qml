@@ -165,9 +165,9 @@ Item {
                                 anchors.centerIn: parent
                                 text: {
                                     var list = page.info.screens || []
-                                    var name = list[page.heroIndex] || ""
+                                    var screen = list[page.heroIndex] || {}
                                     var pos = (page.heroIndex + 1) + " / " + (page.info.heroes || []).length
-                                    return name.length > 0 ? name + "   " + pos : pos
+                                    return screen.name ? screen.name + "   " + pos : pos
                                 }
                                 color: "#dcdce8"
                                 font.pixelSize: 10
@@ -250,89 +250,6 @@ Item {
                         }
 
                         Rectangle {
-                            visible: (page.info.heroes || []).length > 1
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                            anchors.margins: 14
-                            height: 30
-                            width: heroNav.implicitWidth + 12
-                            radius: 15
-                            color: "#cc0a0a0f"
-                            border.width: 1
-                            border.color: "#33ffffff"
-
-                            Row {
-                                id: heroNav
-                                anchors.centerIn: parent
-                                spacing: 0
-
-                                Item {
-                                    width: 26
-                                    height: 30
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "‹"
-                                        color: heroPrev.containsMouse ? "#ffffff" : "#c9c9dd"
-                                        font.pixelSize: 18
-                                    }
-
-                                    MouseArea {
-                                        id: heroPrev
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            var n = (page.info.heroes || []).length
-                                            if (n > 0) page.heroIndex = (page.heroIndex - 1 + n) % n
-                                        }
-                                    }
-                                }
-
-                                Item {
-                                    width: heroCount.implicitWidth + 2
-                                    height: 30
-
-                                    Text {
-                                        id: heroCount
-                                        anchors.centerIn: parent
-                                        text: {
-                                            var list = page.info.screens || []
-                                            var name = list[page.heroIndex] || ""
-                                            var pos = (page.heroIndex + 1) + "/" + (page.info.heroes || []).length
-                                            return name.length > 0 ? name + "  " + pos : pos
-                                        }
-                                        color: "#e9e9f2"
-                                        font.pixelSize: 11
-                                    }
-                                }
-
-                                Item {
-                                    width: 26
-                                    height: 30
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "›"
-                                        color: heroNext.containsMouse ? "#ffffff" : "#c9c9dd"
-                                        font.pixelSize: 18
-                                    }
-
-                                    MouseArea {
-                                        id: heroNext
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            var n = (page.info.heroes || []).length
-                                            if (n > 0) page.heroIndex = (page.heroIndex + 1) % n
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Rectangle {
                             anchors.bottom: parent.bottom
                             width: parent.width
                             height: 180
@@ -374,6 +291,18 @@ Item {
                                 text: (page.info.created || "") + "  ·  " + (page.info.sizeText || "")
                                 color: "#b9b9cc"
                                 font.pixelSize: 12
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: {
+                                    var list = page.info.screens || []
+                                    var screen = list[page.heroIndex] || {}
+                                    return screen.summary || ""
+                                }
+                                color: "#9a9ab0"
+                                font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
                         }

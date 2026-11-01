@@ -41,6 +41,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--screenshot", type=Path, default=None, help="capturar la ventana y salir")
     parser.add_argument("--size", default="", help="tamano de ventana para la captura (ej. 1280x1100)")
+    parser.add_argument(
+        "--backup-now",
+        action="store_true",
+        help="crear una copia al arrancar (pruebas y CI)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -95,28 +100,41 @@ def main(argv: list[str] | None = None) -> int:
         except (ValueError, IndexError):
             print(f"tamano invalido: {args.size}", file=sys.stderr)
 
-    if args.screenshot:
-        target = args.screenshot
+    target = args.screenshot
 
-        def grab() -> None:
-            try:
-                import shiboken6
-                from PySide6.QtQuick import QQuickWindow
-
-                root = engine.rootObjects()[0]
-                window = shiboken6.wrapInstance(shiboken6.getCppPointer(root)[0], QQuickWindow)
-                image = window.grabWindow()
-                if image.isNull():
-                    print("no se pudo capturar la ventana", file=sys.stderr)
-                else:
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    image.save(str(target))
-                    print(f"captura {image.width()}x{image.height()} -> {target}")
-            except Exception as exc:  # pragma: no cover - solo debug
-                print(f"captura fallida: {exc}", file=sys.stderr)
+    def grab() -> None:
+        if target is None:
             app.exit(0)
+            return
+        try:
+            import shiboken6
+            from PySide6.QtQuick import QQuickWindow
 
-        QTimer.singleShot(1900, grab)
+            root = engine.rootObjects()[0]
+            window = shiboken6.wrapInstance(shiboken6.getCppPointer(root)[0], QQuickWindow)
+            image = window.grabWindow()
+            if image.isNull():
+                print("no se pudo capturar la ventana", file=sys.stderr)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                image.save(str(target))
+                print(f"captura {image.width()}x{image.height()} -> {target}")
+        except Exception as exc:  # pragma: no cover - solo debug
+            print(f"captura fallida: {exc}", file=sys.stderr)
+        app.exit(0)
+
+    if args.backup_now:
+        backend.backupCreated.connect(lambda info: print(f"backup {info.get('id', '?')}", flush=True))
+        QTimer.singleShot(700, lambda: backend.createBackup("automatica (debug)", "", True))
+
+    if args.screenshot:
+        if args.backup_now:
+            # retratar recien cuando termino la copia
+            backend.backupCreated.connect(lambda _info: QTimer.singleShot(1200, grab))
+            backend.failed.connect(lambda *_: QTimer.singleShot(400, grab))
+            QTimer.singleShot(60000, grab)
+        else:
+            QTimer.singleShot(1900, grab)
 
     code = app.exec()
 

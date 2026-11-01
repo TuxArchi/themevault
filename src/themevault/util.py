@@ -56,6 +56,28 @@ def which(*names: str) -> str | None:
     return None
 
 
+# Variables que el AppImage (PyInstaller) inyecta y que rompen a los procesos
+# hijos: si `spectacle`, `kscreen-doctor` o `qdbus` las heredan, cargan el Qt
+# del bundle contra los plugins del sistema y abortan.
+CHILD_ENV_DROP = (
+    "LD_LIBRARY_PATH",
+    "QT_QPA_PLATFORM",
+    "QT_PLUGIN_PATH",
+    "QML2_IMPORT_PATH",
+    "QT_QPA_PLATFORM_PLUGIN_PATH",
+    "PYTHONHOME",
+    "PYTHONPATH",
+)
+
+
+def child_env() -> dict[str, str]:
+    """Entorno limpio para invocar herramientas del sistema."""
+    env = os.environ.copy()
+    for key in CHILD_ENV_DROP:
+        env.pop(key, None)
+    return env
+
+
 def run(
     cmd: list[str],
     *,
@@ -65,7 +87,13 @@ def run(
 ) -> subprocess.CompletedProcess | None:
     """Ejecuta un comando. Devuelve None si no existe, falla o expira."""
     try:
-        proc = subprocess.run(cmd, input=input_bytes, capture_output=True, timeout=timeout)
+        proc = subprocess.run(
+            cmd,
+            input=input_bytes,
+            capture_output=True,
+            timeout=timeout,
+            env=child_env(),
+        )
     except (OSError, subprocess.TimeoutExpired):
         return None
     if check and proc.returncode != 0:

@@ -20,6 +20,16 @@ Item {
     signal opened()
     signal restoreRequested()
 
+    function nextCover() {
+        if (covers.length > 1)
+            coverIndex = (coverIndex + 1) % covers.length
+    }
+
+    function prevCover() {
+        if (covers.length > 1)
+            coverIndex = (coverIndex - 1 + covers.length) % covers.length
+    }
+
     MouseArea {
         id: mouse
         anchors.fill: parent
@@ -151,10 +161,11 @@ Item {
 
                 MouseArea {
                     id: prevArea
+                    objectName: "prevArrow"
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: card.coverIndex = (card.coverIndex - 1 + card.covers.length) % card.covers.length
+                    onClicked: card.prevCover()
                 }
             }
 
@@ -187,10 +198,11 @@ Item {
 
                 MouseArea {
                     id: nextArea
+                    objectName: "nextArrow"
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: card.coverIndex = (card.coverIndex + 1) % card.covers.length
+                    onClicked: card.nextCover()
                 }
             }
 

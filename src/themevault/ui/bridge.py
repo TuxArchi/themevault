@@ -263,7 +263,7 @@ class Backend(QObject):
             "itemsText": f"{len(manifest.items)} elementos",
             "hero": hero,
             "heroes": heroes,
-            "screens": [s.get("name", "") for s in (preview.get("screens") or [])],
+            "screens": preview.get("screens") or [],
             "hasHero": bool(hero),
             "palette": list(preview.get("palette") or []),
             "notes": manifest.notes or "",

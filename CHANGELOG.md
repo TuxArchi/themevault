@@ -3,6 +3,30 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.2] - 2026-11-01
+
+### Corregido
+
+- **El AppImage no capturaba el escritorio, ni los monitores, ni las barras.**
+  PyInstaller deja `LD_LIBRARY_PATH` apuntando a su Qt y los procesos hijos
+  (`spectacle`, `kscreen-doctor`, `qdbus6`) heredaban esa variable y abortaban
+  al cargar los plugins del sistema. Ahora `util.run()` los ejecuta con un
+  entorno limpio. Como consecuencia vuelven los recortes por monitor (y las
+  flechas ‹ ›) y la tira de la barra de tareas.
+- La captura reintenta hasta 3 veces y, si falla, guarda el motivo en
+  `preview.capture_error` en lugar de quedar en silencio.
+- El selector de monitor del detalle ya no muestra un contador duplicado y
+  vuelve a incluir el nombre de la pantalla.
+
+### Agregado
+
+- `preview.screens[]` guarda, por pantalla, `custom`, `panels`, `widgets` y un
+  `summary` («Panel inferior · 7 widgets», «Escritorio»).
+- Se recortan todas las pantallas que Plasma administra; un monitor sin paneles
+  se etiqueta como «Escritorio» en vez de descartarse.
+- `themevault-gui --backup-now` crea una copia al arrancar (pruebas y CI).
+- Test con clic real sobre las flechas de la tarjeta.
+
 ## [0.1.1] - 2026-11-01
 
 ### Corregido
@@ -63,5 +87,6 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.1.2]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.2
 [0.1.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.1
 [0.1.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.0

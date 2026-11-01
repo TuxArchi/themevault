@@ -16,7 +16,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.1.1**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.1.2**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME y Xfce, con menos horas de
 > prueba real: los reportes son bienvenidos.
 
