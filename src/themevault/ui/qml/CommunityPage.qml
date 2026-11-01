@@ -283,7 +283,7 @@ Item {
 
                             Text {
                                 Layout.fillWidth: true
-                                text: (modelData.author || "") + "  ·  " + (modelData.settings || 0) + " ajustes"
+                                text: "@" + (modelData.author || "") + "  ·  " + (modelData.settings || 0) + " ajustes"
                                 color: Theme.textDim
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
@@ -456,12 +456,29 @@ Item {
                     elide: Text.ElideRight
                 }
 
-                Text {
+                RowLayout {
                     Layout.fillWidth: true
-                    text: (detail.item.author || "") + "  ·  " + (detail.item.license || "")
-                    color: Theme.textDim
-                    font.pixelSize: 12
-                    elide: Text.ElideRight
+                    spacing: 6
+
+                    Text {
+                        text: "@" + (detail.item.author || "")
+                        color: Theme.accent
+                        font.pixelSize: 12
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: backend.openUrl("https://github.com/" + (detail.item.author || ""))
+                        }
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "·  " + (detail.item.license || "")
+                        color: Theme.textDim
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
                 }
 
                 Text {

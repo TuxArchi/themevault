@@ -369,10 +369,13 @@ def cmd_rebuild(args: argparse.Namespace) -> int:
 def cmd_export_profile(args: argparse.Namespace) -> int:
     from pathlib import Path
 
-    from .profile import build_profile, export_bundle, output_dir, validate
+    from .profile import build_profile, export_bundle, is_handle, output_dir, validate
 
     if not args.author:
-        print(red("Falta --author (tu nombre o usuario para acreditar el perfil)."))
+        print(red("Falta --author (tu usuario de GitHub, sin @)."))
+        return 2
+    if not is_handle(args.author):
+        print(red("--author debe ser tu usuario de GitHub (sin @, sin espacios)."))
         return 2
 
     engine = BackupEngine(args.root)
@@ -431,6 +434,19 @@ def cmd_publish_profile(args: argparse.Namespace) -> int:
         f"  {len(profile.settings)} ajustes · escritorio {profile.desktop} · "
         f"licencia {profile.license} · portada {'sí' if profile.cover else 'no'}"
     )
+
+    mismatch = pub.author_mismatch(profile)
+    if mismatch:
+        if not args.allow_author:
+            print(red(f"El autor no coincide: {mismatch}."))
+            print(
+                dim(
+                    "Usá --allow-author si sos maintainer y publicás/importás "
+                    "en nombre de otra persona."
+                )
+            )
+            return 1
+        print(dim(f"Autor distinto al de gh ({mismatch}); se permite por --allow-author."))
 
     repo = Path(args.repo).expanduser() if args.repo else pub.default_repo()
     if not (repo / "profiles").is_dir():
@@ -637,6 +653,11 @@ def build_parser() -> argparse.ArgumentParser:
     publish.add_argument("--yes", action="store_true", help="no pedir confirmación con --pr")
     publish.add_argument(
         "--force", action="store_true", help="reemplazar un perfil con el mismo id"
+    )
+    publish.add_argument(
+        "--allow-author",
+        action="store_true",
+        help="permitir un autor distinto al usuario de gh (maintainers)",
     )
     publish.set_defaults(func=cmd_publish_profile)
 

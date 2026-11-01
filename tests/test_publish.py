@@ -117,3 +117,39 @@ def test_rebuild_index_corre_el_script_del_repo(tmp_path):
 
 def test_index_ids_sin_indice(tmp_path):
     assert publish.index_ids(tmp_path) == set()
+
+
+def test_gh_user_sin_gh(monkeypatch):
+    monkeypatch.setattr(publish.shutil, "which", lambda name: None)
+    assert publish.gh_user() == ""
+
+
+def test_author_mismatch(monkeypatch, tmp_path):
+    from themevault.profile import Profile
+
+    perfil = Profile(
+        id="demo-kde", name="Demo", author="TuxArchi", license="MIT", desktop="kde"
+    )
+
+    monkeypatch.setattr(publish, "gh_user", lambda: "TuxArchi")
+    assert publish.author_mismatch(perfil) == ""
+
+    monkeypatch.setattr(publish, "gh_user", lambda: "otro")
+    assert "@otro" in publish.author_mismatch(perfil)
+
+    monkeypatch.setattr(publish, "gh_user", lambda: "")
+    assert publish.author_mismatch(perfil) == ""
+
+
+def test_cli_publish_profile_rechaza_autor_distinto(tmp_path, monkeypatch, capsys):
+    from themevault.cli import main
+
+    folder = _bundle(tmp_path)
+    monkeypatch.setattr(publish, "gh_user", lambda: "otra-cuenta")
+
+    code = main(["publish-profile", str(folder), "--repo", str(tmp_path / "repo")])
+
+    assert code == 1
+    salida = capsys.readouterr().out
+    assert "no coincide" in salida
+    assert "--allow-author" in salida

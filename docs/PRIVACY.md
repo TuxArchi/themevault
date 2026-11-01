@@ -10,7 +10,7 @@ Un perfil no es una copia. Es una descripción del aspecto, generada con una
 
 | Se comparte | Ejemplo |
 |---|---|
-| Nombre, autor, licencia, escritorio | `"Catppuccin Mocha"`, `CC-BY-SA-4.0`, `kde` |
+| Nombre, autor, licencia, escritorio | `"Catppuccin Mocha"`, `@tuxarchi`, `CC-BY-SA-4.0`, `kde` |
 | Nombres de tema | `icons: Papirus-Dark`, `cursor: Breeze` |
 | Ajustes de apariencia | `ColorScheme=CatppuccinMocha`, `gtk-theme-name=Breeze` |
 | Paleta | derivada del **esquema de color**, no del wallpaper |
@@ -37,11 +37,18 @@ Un perfil no es una copia. Es una descripción del aspecto, generada con una
 4. Lo enviás como pull request al repositorio de perfiles. `themevault
    publish-profile` valida, copia al clon y regenera el índice; con `--pr`
    abre el pull request (siempre con confirmación).
+   El `author` tiene que ser **tu usuario de GitHub** y coincidir con la cuenta
+   que abre el PR; el CI lo verifica y bloquea que se publique o edite un
+   perfil ajeno.
 5. Un validador automático rechaza rutas, binarios, campos desconocidos y
    tamaños excesivos; después lo revisa una persona.
 
 Sin ese paso manual no hay publicación. La aplicación nunca abre una conexión
 para subir datos.
+
+Al abrir **Compartir…**, si tenés `gh` instalado, la app le pregunta cuál es tu
+usuario para prellenar el campo (una consulta a `api.github.com`). No envía el
+perfil ni ningún dato tuyo: la publicación sigue siendo manual.
 
 ## Qué guarda la app en tu equipo
 

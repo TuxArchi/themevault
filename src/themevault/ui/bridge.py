@@ -99,6 +99,7 @@ class Backend(QObject):
     communityApplied = Signal("QVariantMap")
     profilePreviewed = Signal("QVariantMap")
     profileExported = Signal("QVariantMap")
+    githubUserChanged = Signal()
     failed = Signal(str, str)
 
     def __init__(self, root: Path | None = None, parent: QObject | None = None):
@@ -109,6 +110,8 @@ class Backend(QObject):
         self._jobs: set[_Job] = set()
         self._pending = 0
         self._status = ""
+        self._github_user = ""
+        self._github_asked = False
         self.refresh()
 
     # ------------------------------------------------------------- propiedades
@@ -140,6 +143,10 @@ class Backend(QObject):
     @Property(str, constant=True)
     def exportDir(self) -> str:  # noqa: N802
         return str(default_export_dir())
+
+    @Property(str, notify=githubUserChanged)
+    def githubUser(self) -> str:  # noqa: N802
+        return self._github_user
 
     # --------------------------------------------------------------- comandos
 
@@ -383,6 +390,19 @@ class Backend(QObject):
 
         self._submit("profile_export", work)
 
+    @Slot()
+    def detectGithubUser(self) -> None:  # noqa: N802
+        """Consulta gh al abrir el diálogo de compartir (una sola vez)."""
+        if self._github_asked:
+            return
+        self._github_asked = True
+        self._detect_github_user()
+
+    @Slot(str)
+    def openUrl(self, url: str) -> None:  # noqa: N802
+        if url.startswith("https://github.com/"):
+            QDesktopServices.openUrl(QUrl(url))
+
     @Slot(str)
     def openExportFolder(self, path: str) -> None:  # noqa: N802
         target = Path(path).expanduser()
@@ -537,6 +557,19 @@ class Backend(QObject):
         }
 
     # ---------------------------------------------------------------- interno
+
+    def _detect_github_user(self) -> None:
+        from ..publish import gh_user
+
+        job = _Job("gh_user", gh_user)
+        job.signals.done.connect(self._on_github_user)
+        self._gh_job = job
+        self._pool.start(job)
+
+    def _on_github_user(self, _action: str, login) -> None:
+        if login and login != self._github_user:
+            self._github_user = str(login)
+            self.githubUserChanged.emit()
 
     def _build_profile(
         self,

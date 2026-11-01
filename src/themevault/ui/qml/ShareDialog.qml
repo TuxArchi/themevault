@@ -23,6 +23,9 @@ Popup {
     signal notify(string message, bool error)
 
     readonly property var licenses: ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "MIT", "GPL-3.0-or-later"]
+    readonly property bool authorMismatch: backend.githubUser.length > 0
+                                           && authorInput.text.length > 0
+                                           && authorInput.text.trim().toLowerCase() !== backend.githubUser.toLowerCase()
 
     function openFor(id, notes, suggestedName, suggestedAuthor) {
         backupId = id
@@ -33,9 +36,10 @@ Popup {
         errorText = ""
         exportedTo = ""
         nameInput.text = suggestedName || ""
-        authorInput.text = suggestedAuthor || ""
+        authorInput.text = suggestedAuthor || backend.githubUser || ""
         descInput.text = notes || ""
         destination.text = backend.exportDir
+        backend.detectGithubUser()
         open()
         nameInput.forceActiveFocus()
         refresh()
@@ -111,6 +115,11 @@ Popup {
             dlg.notify("Perfil exportado", false)
         }
 
+        function onGithubUserChanged() {
+            if (dlg.visible && authorInput.text.length === 0)
+                authorInput.text = backend.githubUser
+        }
+
         function onFailed(action, message) {
             if (action === "profile_preview" || action === "profile_export") {
                 dlg.exporting = false
@@ -160,7 +169,7 @@ Popup {
 
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.max(300, Math.min(548, (dlg.parent ? dlg.parent.height : 900) - 200))
+            Layout.preferredHeight: Math.max(300, Math.min(610, (dlg.parent ? dlg.parent.height : 900) - 200))
 
             // ------------------------------------------------------------ formulario
             ScrollView {
@@ -230,7 +239,7 @@ Popup {
                             spacing: 5
 
                             Text {
-                                text: "AUTOR"
+                                text: "AUTOR (@GITHUB)"
                                 color: Theme.textFaint
                                 font.pixelSize: 10
                                 font.weight: Font.DemiBold
@@ -240,7 +249,7 @@ Popup {
                             TextField {
                                 id: authorInput
                                 Layout.fillWidth: true
-                                placeholderText: "tu usuario"
+                                placeholderText: "tu-usuario"
                                 placeholderTextColor: Theme.textFaint
                                 color: Theme.text
                                 font.pixelSize: 13
@@ -255,6 +264,18 @@ Popup {
                                     border.width: 1
                                     border.color: authorInput.activeFocus ? Theme.accentLine : Theme.border
                                 }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                visible: backend.githubUser.length > 0
+                                text: dlg.authorMismatch
+                                      ? "Tu sesión de gh es @" + backend.githubUser + "; el PR como @"
+                                        + authorInput.text.trim() + " va a fallar en CI."
+                                      : "Coincide con tu sesión de gh: @" + backend.githubUser
+                                color: dlg.authorMismatch ? Theme.warn : Theme.ok
+                                font.pixelSize: 9
+                                wrapMode: Text.WordWrap
                             }
                         }
                     }

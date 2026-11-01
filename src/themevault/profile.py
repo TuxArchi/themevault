@@ -72,6 +72,9 @@ XFCE_PROPS = (
 # Nunca se comparte nada que huela a ruta, usuario o historial.
 _UNSAFE = re.compile(r"(^[/~])|(file:)|(\.\./)|([A-Za-z]:\\\\)")
 _SLUG = re.compile(r"[^a-z0-9-]+")
+# Usuario de GitHub: 1-39, alfanumerico y guiones (sin guion al principio,
+# al final ni repetido). Es la identidad verificable al abrir el PR.
+_HANDLE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$")
 
 
 def slug(text: str) -> str:
@@ -85,6 +88,11 @@ def slug(text: str) -> str:
 
 # Compatibilidad con versiones anteriores del modulo.
 _slug = slug
+
+
+def is_handle(value: str) -> bool:
+    """True si `value` es un usuario de GitHub válido."""
+    return bool(_HANDLE.fullmatch((value or "").strip()))
 
 
 def safe_value(value: str) -> bool:
@@ -159,6 +167,10 @@ def validate(profile: Profile) -> list[str]:
         problems.append("falta el nombre")
     if not profile.author.strip():
         problems.append("falta el autor")
+    elif not is_handle(profile.author):
+        problems.append(
+            "autor inválido: usá tu usuario de GitHub (sin @, sin espacios)"
+        )
     if profile.license not in LICENSES:
         problems.append(f"licencia no permitida: {profile.license}")
     if profile.desktop not in DESKTOPS:

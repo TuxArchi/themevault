@@ -325,3 +325,37 @@ def test_output_dir_se_llama_como_el_id(tmp_path):
 
     perfil = Profile(id="mi-estilo", name="Mi estilo", author="yo", license="MIT", desktop="kde")
     assert output_dir(tmp_path, perfil) == tmp_path / "mi-estilo"
+
+
+def test_handle_de_github():
+    for bueno in ("TuxArchi", "a", "tux-archi", "user123"):
+        assert profile_mod.is_handle(bueno), bueno
+
+    for malo in ("", "Tux Archi", "@tux", "tux_archi", "-tux", "tux-",
+                 "tux--archi", "x" * 40, "Linus Torvalds", "yo@ejemplo.com"):
+        assert not profile_mod.is_handle(malo), malo
+
+
+def test_validate_rechaza_autor_que_no_es_handle():
+    perfil = profile_mod.Profile(
+        id="demo-kde",
+        name="Demo",
+        author="Linus Torvalds",
+        license="MIT",
+        desktop="kde",
+    )
+    problemas = profile_mod.validate(perfil)
+    assert any("autor inválido" in p for p in problemas), problemas
+
+
+def test_cli_export_profile_rechaza_autor_invalido(tmp_path, capsys):
+    from themevault.cli import main
+
+    code = main([
+        "export-profile", "cualquiera",
+        "--root", str(tmp_path),
+        "--author", "Linus Torvalds",
+    ])
+
+    assert code == 2
+    assert "usuario de GitHub" in capsys.readouterr().out
