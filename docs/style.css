@@ -1,13 +1,13 @@
 :root {
-  --bg: #0a0a0f;
-  --surface: #101018;
-  --surface-alt: #15151f;
-  --border: #232330;
-  --text: #e9e9f2;
-  --dim: #9b9bb0;
-  --faint: #6a6a7e;
-  --accent: #8b5cf6;
-  --accent-2: #6366f1;
+  --bg: #080e12;
+  --surface: #0d1519;
+  --surface-alt: #121e23;
+  --border: #1e2b31;
+  --text: #e9f2f1;
+  --dim: #9bb3b0;
+  --faint: #6a8582;
+  --accent: #2dd4bf;
+  --accent-2: #0891b2;
   --kofi: #ff5e5b;
   --radius: 16px;
 }
@@ -58,14 +58,10 @@ code, pre {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: block;
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #fff;
-  font-weight: 900;
 }
 
 .nav nav {
@@ -101,8 +97,8 @@ code, pre {
   inset: -30% -10% auto -10%;
   height: 620px;
   background:
-    radial-gradient(600px 300px at 20% 30%, rgba(139, 92, 246, 0.22), transparent 70%),
-    radial-gradient(500px 280px at 80% 10%, rgba(99, 102, 241, 0.18), transparent 70%);
+    radial-gradient(600px 300px at 20% 30%, rgba(45, 212, 191, 0.20), transparent 70%),
+    radial-gradient(500px 280px at 80% 10%, rgba(8, 145, 178, 0.18), transparent 70%);
   pointer-events: none;
 }
 
@@ -128,7 +124,7 @@ h1 {
 
 h1 em {
   font-style: normal;
-  background: linear-gradient(120deg, var(--accent), #a78bfa 60%, var(--accent-2));
+  background: linear-gradient(120deg, var(--accent), #5eead4 60%, var(--accent-2));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -164,7 +160,7 @@ h1 em {
 .btn.primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #fff;
-  box-shadow: 0 10px 30px -12px rgba(139, 92, 246, 0.8);
+  box-shadow: 0 10px 30px -12px rgba(45, 212, 191, 0.75);
 }
 
 .btn.ghost {
@@ -255,7 +251,7 @@ h1 em {
 }
 
 .card:hover {
-  border-color: rgba(139, 92, 246, 0.5);
+  border-color: rgba(45, 212, 191, 0.5);
   transform: translateY(-2px);
 }
 
@@ -297,7 +293,7 @@ h1 em {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--accent);
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(45, 212, 191, 0.4);
   border-radius: 999px;
   padding: 2px 8px;
 }

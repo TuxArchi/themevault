@@ -1,5 +1,7 @@
 # ThemeVault
 
+![ThemeVault](docs/assets/banner.png)
+
 [![CI](https://github.com/TuxArchi/themevault/actions/workflows/ci.yml/badge.svg)](https://github.com/TuxArchi/themevault/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/TuxArchi/themevault?include_prereleases&sort=semver)](https://github.com/TuxArchi/themevault/releases/latest)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
@@ -16,7 +18,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.4.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.4.1**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME y Xfce, con menos horas de
 > prueba real: los reportes son bienvenidos.
 

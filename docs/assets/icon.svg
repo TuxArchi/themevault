@@ -1,10 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8b5cf6"/>
-      <stop offset="1" stop-color="#6366f1"/>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1a1d"/>
+      <stop offset="1" stop-color="#050c0e"/>
     </linearGradient>
+    <linearGradient id="shot" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="0.55" stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a2f34"/>
+      <stop offset="1" stop-color="#04191c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.18" r="0.72">
+      <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect x="4" y="4" width="120" height="120" rx="30" fill="url(#g)"/>
-  <path d="M34 42h60v14H72v34H56V56H34z" fill="#ffffff"/>
+
+  <rect width="512" height="512" rx="116" fill="url(#tile)"/>
+  <rect width="512" height="512" rx="116" fill="url(#glow)"/>
+
+  <rect x="101" y="130" width="250" height="180" rx="30" fill="#0f4a4c"
+        stroke="#08131a" stroke-width="12"/>
+  <rect x="131" y="164" width="250" height="180" rx="30" fill="#157a80"
+        stroke="#08131a" stroke-width="12"/>
+  <rect x="161" y="198" width="250" height="180" rx="30" fill="url(#shot)"
+        stroke="#08131a" stroke-width="12"/>
+
+  <rect x="173" y="210" width="226" height="118" rx="18" fill="#d9fff9" opacity="0.42"/>
+  <circle cx="326" cy="250" r="52" fill="#ffffff" opacity="0.2"/>
+  <circle cx="358" cy="222" r="22" fill="#ffffff" opacity="0.28"/>
+
+  <rect x="173" y="340" width="226" height="26" rx="13" fill="url(#panel)"/>
+  <circle cx="193" cy="353" r="5" fill="#5eead4"/>
+  <circle cx="211" cy="353" r="5" fill="#cbd5e1" opacity="0.85"/>
+  <circle cx="229" cy="353" r="5" fill="#cbd5e1" opacity="0.7"/>
+  <circle cx="247" cy="353" r="5" fill="#cbd5e1" opacity="0.5"/>
+
+  <g transform="translate(348 284)">
+    <path d="M0 0 L0 47 L11 37 L19 55 L28 51 L20 33 L34 33 Z"
+          fill="#ffffff" stroke="#04231f" stroke-width="5" stroke-linejoin="round"/>
+  </g>
 </svg>

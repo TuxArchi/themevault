@@ -3,23 +3,23 @@ import QtQuick
 
 QtObject {
     // Fondo y superficies
-    readonly property color bg: "#0a0a0f"
-    readonly property color surface: "#101018"
-    readonly property color surfaceAlt: "#15151f"
-    readonly property color surfaceHover: "#191924"
-    readonly property color border: "#232330"
-    readonly property color borderStrong: "#30303f"
+    readonly property color bg: "#080e12"
+    readonly property color surface: "#0d1519"
+    readonly property color surfaceAlt: "#121e23"
+    readonly property color surfaceHover: "#17272d"
+    readonly property color border: "#1e2b31"
+    readonly property color borderStrong: "#2b3d44"
 
     // Texto
-    readonly property color text: "#e9e9f2"
-    readonly property color textDim: "#9b9bb0"
-    readonly property color textFaint: "#6a6a7e"
+    readonly property color text: "#e9f2f1"
+    readonly property color textDim: "#9bb3b0"
+    readonly property color textFaint: "#6a8582"
 
     // Acento
-    readonly property color accent: "#8b5cf6"
-    readonly property color accent2: "#6366f1"
-    readonly property color accentSoft: "#268b5cf6"
-    readonly property color accentLine: "#668b5cf6"
+    readonly property color accent: "#2dd4bf"
+    readonly property color accent2: "#0891b2"
+    readonly property color accentSoft: "#262dd4bf"
+    readonly property color accentLine: "#662dd4bf"
 
     // Estados
     readonly property color ok: "#34d399"
@@ -30,5 +30,5 @@ QtObject {
     readonly property int radiusSmall: 10
     readonly property int radiusInput: 9
 
-    readonly property string appVersion: "0.4.0"
+    readonly property string appVersion: "0.4.1"
 }
