@@ -16,7 +16,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.1.5**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.1.6**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME y Xfce, con menos horas de
 > prueba real: los reportes son bienvenidos.
 
@@ -176,6 +176,7 @@ themevault rebuild <id>              # regenerar portada y widgets de una copia
 themevault install-widgets <id>      # instalar los widgets que trae la copia
 themevault widgets search "clima"    # buscar en la tienda
 themevault widgets install 2380036   # instalar un widget de la tienda
+themevault export-profile <id> --author vos --name "Mi estilo"   # perfil compartible
 themevault verify <id>               # verificar hashes
 themevault delete <id> -y            # borrar
 themevault ui --backup <id>          # abrir la GUI en el detalle
@@ -362,6 +363,21 @@ Y registrarlo en `adapters/__init__.py`. No hay que tocar el core ni la GUI.
 `packaging/themevault.desktop` + `src/themevault/ui/qml/themevault.svg` sirven
 para instalarlo en el menú de aplicaciones. Para capturas automáticas o CI,
 `themevault-gui --screenshot salida.png [--backup <id>] [--action restore|new]`.
+
+---
+
+## Comunidad de perfiles
+
+Está en construcción. La fase 1 (modelo, validación y exportación) ya está:
+`themevault export-profile` genera un `profile.json` con **lista blanca de
+campos** —sin rutas, sin historial y sin la captura salvo que lo pidas— que se
+puede publicar como pull request en el repositorio de perfiles.
+
+Qué se comparte y qué no: [docs/PRIVACY.md](docs/PRIVACY.md).
+
+Las fases siguientes son la sección «Comunidad» dentro de la app (grilla,
+filtros y aplicar un perfil con el mismo motor de restauración) y el asistente
+para publicar.
 
 ---
 

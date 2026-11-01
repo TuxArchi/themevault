@@ -366,6 +366,51 @@ def cmd_rebuild(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_profile(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from .profile import build_profile, export_bundle, validate
+
+    if not args.author:
+        print(red("Falta --author (tu nombre o usuario para acreditar el perfil)."))
+        return 2
+
+    engine = BackupEngine(args.root)
+    manifest = engine.resolve(args.id)
+    store = engine.store(manifest.id)
+
+    name = args.name or manifest.label or manifest.display_name()
+    profile, dropped = build_profile(
+        manifest,
+        store,
+        name=name,
+        author=args.author,
+        license=args.license,
+        description=args.description or manifest.notes,
+        include_cover=args.with_cover,
+    )
+
+    problems = validate(profile)
+    if problems:
+        print(red("El perfil no pasó la validación:"))
+        for problem in problems:
+            print(f"  · {problem}")
+        return 1
+
+    out = Path(args.out) if args.out else Path.cwd() / f"profile-{profile.id}"
+    export_bundle(profile, out, manifest=manifest, store=store)
+
+    print(green("Perfil generado") + f"  {bold(profile.id)}")
+    print(f"  {out}")
+    print(f"  {len(profile.settings)} ajustes · escritorio {profile.desktop} · licencia {profile.license}")
+    if profile.requires:
+        print("  requiere: " + ", ".join(f"{k}={v}" for k, v in profile.requires.items()))
+    for note in dropped:
+        print(dim(f"  · {note}"))
+    print(dim("\nRevisá profile.json antes de publicarlo."))
+    return 0
+
+
 def cmd_install_widgets(args: argparse.Namespace) -> int:
     from . import widgets_install
 
@@ -483,6 +528,22 @@ def build_parser() -> argparse.ArgumentParser:
     widgets.add_argument("action", choices=("search", "install"))
     widgets.add_argument("target", help="texto a buscar o id del widget")
     widgets.set_defaults(func=cmd_widgets)
+
+    export = sub.add_parser(
+        "export-profile",
+        parents=[common],
+        help="genera un perfil compartible (sin datos personales) desde una copia",
+    )
+    export.add_argument("id")
+    export.add_argument("--name", help="nombre visible del perfil")
+    export.add_argument("--author", default="", help="autor (obligatorio)")
+    export.add_argument("--license", default="CC-BY-SA-4.0", choices=(
+        "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "MIT", "GPL-3.0-or-later",
+    ))
+    export.add_argument("--description", default="")
+    export.add_argument("--with-cover", action="store_true", help="incluir la captura (puede mostrar tu fondo)")
+    export.add_argument("--out", help="carpeta de salida")
+    export.set_defaults(func=cmd_export_profile)
 
     install = sub.add_parser(
         "install-widgets",

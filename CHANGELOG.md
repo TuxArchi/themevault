@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.6] - 2026-11-01
+
+### Agregado
+
+- **Perfiles compartibles** (fase 1 de la comunidad): `themevault export-profile`
+  genera un `profile.json` a partir de una copia usando una lista blanca de
+  campos.
+  - Descarta rutas, historial, nombres de archivos, textos de widgets y la
+    captura del escritorio (esta solo con `--with-cover`).
+  - La paleta sale del **esquema de color**, nunca del wallpaper.
+  - Validación de id, licencia, escritorio, valores y backends.
+- **Backends `ini` y `dconf`** en el motor de ajustes: `kwriteconfig6` y
+  `dconf write`, con edición directa del INI como respaldo. Necesarios para
+  aplicar perfiles (y útiles para futuros ajustes finos).
+- `docs/PRIVACY.md`: qué se comparte, qué no y cómo revocar un perfil.
+
+### Notas
+
+- La sección «Comunidad» dentro de la app y el repositorio de perfiles llegan
+  en la próxima versión.
+
 ## [0.1.5] - 2026-11-01
 
 ### Agregado
@@ -141,6 +162,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.1.6]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.6
 [0.1.5]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.5
 [0.1.4]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.4
 [0.1.3]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.3
