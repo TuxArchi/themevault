@@ -10,7 +10,7 @@ from themevault import plasma_layout, screen_restore
 from themevault.model import Item, Manifest
 from themevault.store import BlobStore
 
-from test_plasma_layout import LIVE, SAVED
+from test_plasma_layout import LIVE, LIVE_SHELL, SAVED, SAVED_SHELL
 
 APPLETSRC = "~/.config/plasma-org.kde.plasma.desktop-appletsrc"
 
@@ -26,11 +26,21 @@ def _manifest(store: BlobStore, screens: list[dict] | None = None) -> Manifest:
         sha256=sha,
         size=size,
     )
+    shell_blob, shell_sha, shell_size = store.put_bytes(SAVED_SHELL.encode())
+    shell = Item(
+        kind="file",
+        category="layout",
+        name="plasmashellrc",
+        source="~/.config/plasmashellrc",
+        blob=shell_blob,
+        sha256=shell_sha,
+        size=shell_size,
+    )
     return Manifest(
         id="20260101-000000-kde",
         created="2026-01-01T00:00:00",
         host={"de": "kde"},
-        items=[item],
+        items=[item, shell],
         preview={"screens": screens or [{"index": 0, "name": "DP-3"}]},
     )
 
@@ -41,8 +51,11 @@ def entorno(tmp_path, monkeypatch):
     manifest = _manifest(store)
     live = tmp_path / "plasma-org.kde.plasma.desktop-appletsrc"
     live.write_text(LIVE)
+    shell = tmp_path / "plasmashellrc"
+    shell.write_text(LIVE_SHELL)
     monkeypatch.setattr(screen_restore, "live_path", lambda: live)
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "share"))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     return store, manifest, live
 
 
@@ -87,6 +100,24 @@ def test_restaura_el_fondo_de_la_pantalla(entorno, monkeypatch, tmp_path):
         nuevo.get(f"Containments][{escritorio}][Wallpaper][org.kde.image][General", "Image")
         == destino.as_uri()
     )
+
+
+def test_restaura_la_geometria_del_panel(entorno):
+    store, manifest, live = entorno
+    screen_restore.apply(manifest, store, {0: 1}, restart=False)
+
+    shell = (live.parent / "plasmashellrc").read_text()
+    parser = plasma_layout.parse_layout(shell)
+    assert not parser.has_section("PlasmaViews][Panel 11")
+    nuevo = next(
+        cid
+        for cid in plasma_layout.containment_ids(plasma_layout.parse_layout(live.read_text()))
+        if plasma_layout.parse_layout(live.read_text()).get(f"Containments][{cid}", "plugin")
+        == "org.kde.panel"
+        and plasma_layout.parse_layout(live.read_text()).get(f"Containments][{cid}", "lastScreen") == "1"
+    )
+    assert parser.get(f"PlasmaViews][Panel {nuevo}", "panelVisibility") == "2"
+    assert parser.get(f"PlasmaViews][Panel {nuevo}][Defaults", "thickness") == "46"
 
 
 def test_sin_mapeo_falla(entorno):

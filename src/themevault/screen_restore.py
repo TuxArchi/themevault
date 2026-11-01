@@ -18,6 +18,16 @@ from .store import BlobStore
 from .util import child_env, run, xdg_config_home, xdg_data_home
 
 
+def _item_text(manifest: Manifest, store: BlobStore, suffix: str) -> str:
+    for item in manifest.items:
+        if (item.source or "").endswith(suffix) and item.blob:
+            try:
+                return store.read(item.blob).decode("utf-8", "replace")
+            except OSError:
+                return ""
+    return ""
+
+
 def _appletsrc_item(manifest: Manifest):
     return next(
         (
@@ -88,6 +98,18 @@ def apply(
     live_text = destination.read_text(errors="replace")
     merged, report = plasma_layout.merge(saved_text, live_text, mapping)
 
+    # geometria del panel: grosor, flotante y modo de ocultado viven aparte
+    shell_saved = _item_text(manifest, store, "plasmashellrc")
+    shell_path = xdg_config_home() / "plasmashellrc"
+    shell_backup = shell_path.with_suffix(".themevault.bak")
+    merged_shell = ""
+    if shell_path.is_file():
+        live_shell = shell_path.read_text(errors="replace")
+        merged_shell = plasma_layout.merge_shellrc(
+            shell_saved, live_shell, report.cid_map, report.replaced
+        )
+        _write_atomic(shell_backup, live_shell)
+
     # fondos: copiar el archivo del respaldo y apuntar el containment
     wallpapers = []
     for source, target in mapping.items():
@@ -111,6 +133,8 @@ def apply(
     backup_file = destination.with_suffix(".themevault.bak")
     _write_atomic(backup_file, live_text)
     _write_atomic(destination, merged)
+    if merged_shell:
+        _write_atomic(shell_path, merged_shell)
 
     mechanism = ""
     if restart:
@@ -141,5 +165,11 @@ def revert() -> bool:
     if not backup_file.is_file():
         return False
     _write_atomic(destination, backup_file.read_text(errors="replace"))
+
+    shell_path = xdg_config_home() / "plasmashellrc"
+    shell_backup = shell_path.with_suffix(".themevault.bak")
+    if shell_backup.is_file():
+        _write_atomic(shell_path, shell_backup.read_text(errors="replace"))
+
     _restart_plasma()
     return True

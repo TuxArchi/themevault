@@ -154,6 +154,7 @@ class MergeReport:
     added: list[str] = field(default_factory=list)
     mapping: dict[int, int] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+    cid_map: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -248,6 +249,8 @@ def merge(
                 if activity:
                     live.set(new_section, "activityId", activity)
 
+    report.cid_map = dict(cid_map)
+
     buffer = io.StringIO()
     live.write(buffer)
     return buffer.getvalue(), report
@@ -291,4 +294,54 @@ def rewrite_wallpaper(text: str, target_screen: int, new_path: str) -> str:
                 parser.set(candidate, "Image", new_path)
     buffer = io.StringIO()
     parser.write(buffer)
+    return buffer.getvalue()
+
+
+# ------------------------------------------------------- geometria del panel
+
+_PANEL_VIEW = re.compile(r"^PlasmaViews\]\[Panel (\d+)(?:\]|$)")
+
+
+def merge_shellrc(
+    saved_text: str,
+    live_text: str,
+    cid_map: dict[str, str],
+    replaced_ids: list[str],
+) -> str:
+    """Copia la geometria de cada panel (`plasmashellrc`) con el id nuevo.
+
+    El grosor, si flota y el modo de ocultado viven aca, no en el appletsrc.
+    Sin esto, el panel restaurado aparece con el tamano y el comportamiento por
+    defecto aunque sus widgets esten bien.
+    """
+    live = _parse(live_text)
+
+    replaced = {str(cid) for cid in replaced_ids}
+    for section in list(live.sections()):
+        match = _PANEL_VIEW.match(section)
+        if match and match.group(1) in replaced:
+            live.remove_section(section)
+
+    if not saved_text.strip() or not cid_map:
+        buffer = io.StringIO()
+        live.write(buffer)
+        return buffer.getvalue()
+
+    saved = _parse(saved_text)
+    for section in saved.sections():
+        match = _PANEL_VIEW.match(section)
+        if not match:
+            continue
+        new_id = cid_map.get(match.group(1))
+        if not new_id:
+            continue
+        renamed = section.replace(f"Panel {match.group(1)}", f"Panel {new_id}", 1)
+        if live.has_section(renamed):
+            live.remove_section(renamed)
+        live.add_section(renamed)
+        for key, value in saved.items(section):
+            live.set(renamed, key, value)
+
+    buffer = io.StringIO()
+    live.write(buffer)
     return buffer.getvalue()

@@ -3,6 +3,22 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.4] - 2026-11-01
+
+### Corregido
+
+- **El restore por pantalla dejaba la barra con el tamaño y el comportamiento
+  por defecto.** La geometría del panel (`thickness`, `floating`,
+  `panelVisibility`) no vive en el `appletsrc` sino en `plasmashellrc`,
+  indexada por número de panel, y no se estaba mezclando. Ahora se copia
+  renumerada al id nuevo, con su propio `.bak`, y `themevault revert-layout`
+  devuelve los dos archivos.
+
+### Notas
+
+- Los colores e iconos son globales: en modo «por pantalla» hay que restaurar
+  también *Temas* e *Iconos* si se busca el aspecto completo.
+
 ## [0.1.3] - 2026-11-01
 
 ### Agregado
@@ -104,6 +120,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.1.4]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.4
 [0.1.3]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.3
 [0.1.2]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.2
 [0.1.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.1

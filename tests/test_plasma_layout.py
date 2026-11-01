@@ -186,3 +186,38 @@ Image=file:///viejo.png
         parser.get("Containments][11][Wallpaper][org.kde.image][General", "Image")
         == "file:///nuevo.png"
     )
+
+
+SAVED_SHELL = """[PlasmaViews][Panel 3]
+floating=1
+panelVisibility=2
+
+[PlasmaViews][Panel 3][Defaults]
+thickness=46
+
+[Updates]
+performed=viejo
+"""
+
+LIVE_SHELL = """[PlasmaViews][Panel 11]
+floating=1
+
+[Updates]
+performed=nuevo
+"""
+
+
+def test_merge_shellrc_renumera_y_limpia():
+    out = plasma_layout.merge_shellrc(SAVED_SHELL, LIVE_SHELL, {"3": "12"}, ["11"])
+    parser = plasma_layout.parse_layout(out)
+
+    assert not parser.has_section("PlasmaViews][Panel 11")
+    assert parser.get("PlasmaViews][Panel 12", "panelVisibility") == "2"
+    assert parser.get("PlasmaViews][Panel 12", "floating") == "1"
+    assert parser.get("PlasmaViews][Panel 12][Defaults", "thickness") == "46"
+    assert parser.get("Updates", "performed") == "nuevo"
+
+
+def test_merge_shellrc_sin_respaldo_no_rompe():
+    out = plasma_layout.merge_shellrc("", LIVE_SHELL, {"3": "12"}, [])
+    assert "Panel 11" in out

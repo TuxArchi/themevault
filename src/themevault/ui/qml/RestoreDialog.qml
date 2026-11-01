@@ -594,7 +594,7 @@ Popup {
                     Text {
                         visible: dlg.perScreen
                         Layout.fillWidth: true
-                        text: "Se reiniciará plasmashell (~2 s) y solo se aplican las pantallas elegidas; las categorías de arriba no se usan. Tus ventanas no se cierran."
+                        text: "Se reiniciará plasmashell (~2 s) y solo se aplican las pantallas elegidas; las categorías de arriba no se usan. Colores e iconos son globales: aplicalos aparte si querés el aspecto completo. Tus ventanas no se cierran."
                         color: Theme.warn
                         font.pixelSize: 10
                         wrapMode: Text.WordWrap
