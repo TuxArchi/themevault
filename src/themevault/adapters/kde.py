@@ -57,6 +57,7 @@ class KdeAdapter(Adapter):
             "icons": _kde_value("kdeglobals", "Icons", "Theme"),
             "cursor": _kde_value("kcminputrc", "Mouse", "cursorTheme"),
             "plasma": _kde_value("plasmarc", "Theme", "name"),
+            "color_scheme": _kde_value("kdeglobals", "General", "ColorScheme"),
             "gtk": _gtk_theme(),
         }
 

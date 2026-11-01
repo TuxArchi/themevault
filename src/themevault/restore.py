@@ -8,6 +8,7 @@ Reglas de oro:
 
 from __future__ import annotations
 
+import configparser
 import os
 import shutil
 from dataclasses import dataclass, field
@@ -18,7 +19,7 @@ from .detect import scan_system_assets
 from .drivers import dconf_available, dconf_load, set_prop, xfconf_available
 from .model import KIND_DCONF, KIND_FILE, KIND_SETTING, KIND_TREE, Item, Manifest
 from .store import BlobStore
-from .util import from_portable, home, is_within
+from .util import from_portable, home, is_within, run, which, xdg_config_home
 
 OK = "ok"
 WARN = "warn"
@@ -64,10 +65,19 @@ def _check_item(item: Item, store: BlobStore | None) -> Action:
         action.status = BLOCKED
         action.message = "dconf no esta instalado en este sistema"
         return action
-    if item.kind == KIND_SETTING and item.backend == "xfconf" and not xfconf_available():
-        action.status = BLOCKED
-        action.message = "xfconf-query no esta instalado en este sistema"
-        return action
+    if item.kind == KIND_SETTING:
+        if item.backend == "xfconf" and not xfconf_available():
+            action.status = BLOCKED
+            action.message = "xfconf-query no esta instalado en este sistema"
+            return action
+        if item.backend == "dconf" and not dconf_available():
+            action.status = BLOCKED
+            action.message = "dconf no esta instalado en este sistema"
+            return action
+        if item.backend not in ("xfconf", "dconf", "ini"):
+            action.status = BLOCKED
+            action.message = f"backend desconocido: {item.backend}"
+            return action
 
     if item.kind in (KIND_FILE, KIND_TREE):
         if not item.source.startswith("~"):
@@ -127,7 +137,7 @@ def build_plan(
 
 def apply_plan(
     actions: list[Action],
-    store: BlobStore,
+    store: BlobStore | None,
     *,
     safety: bool = True,
     engine_root: Path | None = None,
@@ -161,7 +171,9 @@ def apply_plan(
     return report
 
 
-def _apply_item(item: Item, store: BlobStore) -> None:
+def _apply_item(item: Item, store: BlobStore | None) -> None:
+    if item.kind in (KIND_FILE, KIND_TREE) and store is None:
+        raise RuntimeError("falta el almacen de la copia para este elemento")
     if item.kind == KIND_FILE:
         _restore_file(item, store)
     elif item.kind == KIND_TREE:
@@ -171,19 +183,79 @@ def _apply_item(item: Item, store: BlobStore) -> None:
         if not ok:
             raise RuntimeError(message or "dconf load fallo")
     elif item.kind == KIND_SETTING:
-        if item.backend == "xfconf":
-            ok, message = set_prop(
-                item.data["channel"],
-                item.data["prop"],
-                item.data["type"],
-                item.data["value"],
-            )
-            if not ok:
-                raise RuntimeError(message)
-        else:
-            raise RuntimeError(f"backend desconocido: {item.backend}")
+        _apply_setting(item)
     else:
         raise RuntimeError(f"tipo de item desconocido: {item.kind}")
+
+
+def _apply_setting(item: Item) -> None:
+    data = item.data or {}
+    if item.backend == "xfconf":
+        ok, message = set_prop(
+            data.get("channel", ""),
+            data.get("prop", ""),
+            data.get("type", "string"),
+            data.get("value", ""),
+        )
+        if not ok:
+            raise RuntimeError(message)
+        return
+
+    if item.backend == "dconf":
+        path = (data.get("path") or "").rstrip("/")
+        key = data.get("key") or ""
+        if not path or not key:
+            raise RuntimeError("ajuste dconf incompleto")
+        proc = run(["dconf", "write", f"{path}/{key}", str(data.get("value", ""))], timeout=20)
+        if proc is None or proc.returncode != 0:
+            detail = proc.stderr.decode("utf-8", "replace").strip() if proc else "dconf no disponible"
+            raise RuntimeError(detail or "dconf write fallo")
+        return
+
+    if item.backend == "ini":
+        _write_ini(data)
+        return
+
+    raise RuntimeError(f"backend desconocido: {item.backend}")
+
+
+def _write_ini(data: dict) -> None:
+    filename = str(data.get("file") or "")
+    group = str(data.get("group") or "")
+    key = str(data.get("key") or "")
+    value = str(data.get("value") or "")
+    if not filename or not group or not key:
+        raise RuntimeError("ajuste ini incompleto")
+
+    tool = which("kwriteconfig6", "kwriteconfig5")
+    if tool is not None:
+        proc = run(
+            [tool, "--file", filename, "--group", group, "--key", key, "--type", "string", value],
+            timeout=20,
+        )
+        if proc is not None and proc.returncode == 0:
+            return
+
+    path = xdg_config_home() / filename
+    parser = configparser.RawConfigParser(strict=False)
+    parser.optionxform = str
+    if path.is_file():
+        try:
+            parser.read_string(path.read_text(errors="replace"))
+        except configparser.Error:
+            parser = configparser.RawConfigParser(strict=False)
+            parser.optionxform = str
+    if not parser.has_section(group):
+        parser.add_section(group)
+    parser.set(group, key, value)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".themevault.tmp")
+    import io as _io
+
+    buffer = _io.StringIO()
+    parser.write(buffer)
+    tmp.write_text(buffer.getvalue())
+    os.replace(tmp, path)
 
 
 def _guard(destination: Path) -> None:
