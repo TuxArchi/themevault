@@ -68,7 +68,9 @@ def main(argv: list[str] | None = None) -> int:
 
     from .bridge import Backend
 
-    backend = Backend(args.root)
+    # El backend cuelga de la aplicacion: vive hasta el final y no se destruye
+    # antes que el motor QML (si no, al cerrar se vacian todos los bindings).
+    backend = Backend(args.root, parent=app)
 
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("backend", backend)
@@ -116,7 +118,19 @@ def main(argv: list[str] | None = None) -> int:
 
         QTimer.singleShot(1900, grab)
 
-    return app.exec()
+    code = app.exec()
+
+    # Destruir el motor QML antes que el backend evita que las expresiones se
+    # reevalúen contra un objeto ya liberado (los "Cannot read property ... of
+    # null" que aparecían al cerrar). shiboken.delete fuerza la destrucción en
+    # C++ sin depender del ciclo del recolector.
+    try:
+        import shiboken6
+
+        shiboken6.delete(engine)
+    except Exception:
+        del engine
+    return code
 
 
 if __name__ == "__main__":
