@@ -29,13 +29,16 @@ Para evaluar un reporte sirve tener claro el modelo de seguridad:
   home se bloquea en el plan de restauración.
 - **Nunca pide `sudo` ni escribe en `/usr`.** Los temas del sistema se
   referencian por nombre, no se copian.
-- **No usa la red.** Ni telemetría ni actualizaciones automáticas.
+- **No usa la red por defecto.** Solo contacta `api.kde-look.org` cuando pedís
+  buscar o instalar un widget desde la tienda; nunca en segundo plano.
 - **Restaurar es reversible**: antes de aplicar se crea una copia del estado
   actual.
 - **Lee configuración del escritorio** (dconf, xfconf, archivos INI) y ejecuta
   utilidades del sistema (`dconf`, `xfconf-query`, `kreadconfig6`,
-  `kscreen-doctor`, `rsvg-convert`, herramientas de captura). No ejecuta nada
-  que venga dentro de una copia.
+  `kscreen-doctor`, `rsvg-convert`, `kpackagetool6`, herramientas de captura).
+- **Instala widgets con `kpackagetool6`** solo cuando lo pedís: desde el
+  respaldo o desde la tienda. Es código de terceros y queda en tu carpeta
+  personal; la app avisa antes de instalarlo.
 
 Quedan fuera de alcance los problemas que requieran que un atacante ya controle
 tu cuenta de usuario o tu sesión gráfica.

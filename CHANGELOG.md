@@ -3,6 +3,27 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.5] - 2026-11-01
+
+### Agregado
+
+- **Widgets de terceros en el respaldo**: se guardan los que instalaste en tu
+  usuario (`~/.local/share/plasma/plasmoids`).
+- **Instalación desde la copia**: el diálogo de restauración detecta los widgets
+  que faltan y ofrece instalarlos con `kpackagetool6` (KPackage), con botón
+  individual y «instalar todos». También `themevault install-widgets <id>`.
+- **Tienda de widgets**: buscador integrado sobre store.kde.org usando el mismo
+  proveedor que Plasma (`api.kde-look.org`), con resultados, metadatos y
+  descarga + instalación desde la app. CLI: `themevault widgets search|install`.
+- **Aviso de resolución**: al restaurar una pantalla en un monitor con otra
+  resolución se indica que las posiciones de iconos se reacomodan.
+
+### Notas
+
+- La aplicación usa la red **solo** cuando buscás o instalás desde la tienda.
+- Instalar un widget es ejecutar código de terceros: la app lo advierte y lo
+  deja en la carpeta del usuario.
+
 ## [0.1.4] - 2026-11-01
 
 ### Corregido
@@ -120,6 +141,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.1.5]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.5
 [0.1.4]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.4
 [0.1.3]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.3
 [0.1.2]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.2

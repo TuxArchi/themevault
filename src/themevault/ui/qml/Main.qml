@@ -225,8 +225,24 @@ ApplicationWindow {
         id: newDialog
     }
 
+    StoreDialog {
+        id: storeDialog
+
+        onNotify: function(message, error) {
+            window.showToast(message, error ? "error" : "ok")
+        }
+    }
+
     RestoreDialog {
         id: restoreDialog
+
+        onStoreRequested: function(query) {
+            storeDialog.openWith(query)
+        }
+
+        onNotify: function(message, error) {
+            window.showToast(message, error ? "error" : "ok")
+        }
 
         onFinished: {
             if (result && result.applied > 0)
@@ -292,6 +308,8 @@ ApplicationWindow {
 
         SystemPage {
             pageId: "system"
+
+            onOpenStore: storeDialog.openWith("")
         }
     }
 

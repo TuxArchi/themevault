@@ -24,6 +24,8 @@ Popup {
     property var screenMapping: ({})
 
     signal finished()
+    signal storeRequested(string query)
+    signal notify(string message, bool error)
 
     function openFor(id) {
         backupId = id
@@ -102,12 +104,36 @@ Popup {
                 label: "No",
                 selected: dlg.screenMapping[source.index] === -1
             })
+
+            var warning = ""
+            var picked = dlg.screenMapping[source.index]
+            for (var k = 0; k < targets.length; k++) {
+                if (targets[k].index !== picked)
+                    continue
+                if (source.width && targets[k].width
+                        && (source.width !== targets[k].width || source.height !== targets[k].height)) {
+                    warning = "⚠ " + targets[k].width + "×" + targets[k].height
+                              + " (origen " + source.width + "×" + source.height
+                              + "): las posiciones de iconos se reacomodan"
+                }
+            }
+
             rows.push({
                 label: (source.name || "") + "  ·  " + (source.summary || ""),
-                cells: cells
+                cells: cells,
+                warning: warning
             })
         }
         return rows
+    }
+
+    function availableWidgetIds() {
+        var out = []
+        var list = (dlg.plan && dlg.plan.missingWidgets) || []
+        for (var i = 0; i < list.length; i++)
+            if (list[i].inBackup)
+                out.push(list[i].id)
+        return out
     }
 
     function selectedScreens() {
@@ -168,6 +194,20 @@ Popup {
                 dlg.result = r
                 dlg.finished()
             }
+        }
+
+        function onWidgetsInstalled(r) {
+            if (!dlg.opened)
+                return
+            var done = (r.installed || []).length
+            if (done > 0) {
+                dlg.notify(done + (done === 1 ? " widget instalado" : " widgets instalados"), false)
+                dlg.plan = null
+                backend.requestPlan(dlg.backupId)
+            }
+            var failed = r.failed || []
+            if (failed.length > 0)
+                dlg.notify(failed[0].message || "no se pudo instalar el widget", true)
         }
 
         function onScreenRestoreFinished(r) {
@@ -359,29 +399,54 @@ Popup {
                     id: missingWidgetsCol
                     anchors.fill: parent
                     anchors.margins: 12
-                    spacing: 3
+                    spacing: 6
 
                     Text {
-                        text: "Widgets que no estan instalados"
+                        text: "Widgets que no están instalados"
                         color: Theme.warn
                         font.pixelSize: 11
                         font.weight: Font.DemiBold
                     }
 
-                    Text {
-                        Layout.fillWidth: true
-                        text: {
-                            if (!dlg.plan)
-                                return ""
-                            var list = dlg.plan.missingWidgets || []
-                            var shown = list.slice(0, 6).join(", ")
-                            if (list.length > 6)
-                                shown += " y " + (list.length - 6) + " mas"
-                            return shown + ". Su configuracion se restaura, pero apareceran como no disponibles."
+                    Repeater {
+                        model: dlg.plan ? dlg.plan.missingWidgets : []
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.name
+                                color: Theme.textDim
+                                font.pixelSize: 10
+                                elide: Text.ElideRight
+                            }
+
+                            AppButton {
+                                visible: modelData.inBackup
+                                text: "Instalar"
+                                variant: "subtle"
+                                small: true
+                                onClicked: backend.installBackupWidgets(dlg.backupId, [modelData.id])
+                            }
+
+                            AppButton {
+                                text: modelData.inBackup ? "Tienda" : "Buscar en la tienda"
+                                variant: "ghost"
+                                small: true
+                                onClicked: dlg.storeRequested(modelData.name)
+                            }
                         }
-                        color: Theme.textDim
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
+                    }
+
+                    AppButton {
+                        visible: dlg.availableWidgetIds().length > 0
+                        Layout.topMargin: 2
+                        text: "Instalar desde la copia (" + dlg.availableWidgetIds().length + ")"
+                        variant: "subtle"
+                        small: true
+                        onClicked: backend.installBackupWidgets(dlg.backupId, dlg.availableWidgetIds())
                     }
                 }
             }
@@ -587,6 +652,15 @@ Popup {
                                         }
                                     }
                                 }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                visible: (modelData.warning || "").length > 0
+                                text: modelData.warning || ""
+                                color: Theme.warn
+                                font.pixelSize: 9
+                                wrapMode: Text.WordWrap
                             }
                         }
                     }

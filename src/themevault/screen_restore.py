@@ -43,7 +43,7 @@ def live_path() -> Path:
     return xdg_config_home() / plasma_layout.APPLETSRC
 
 
-def _restart_plasma() -> str:
+def restart_plasma() -> str:
     """Reinicia plasmashell. Devuelve el mecanismo usado."""
     probe = run(["systemctl", "--user", "is-active", "plasma-plasmashell"], timeout=10)
     if probe is not None and probe.stdout.decode("utf-8", "replace").strip() == "active":
@@ -138,11 +138,11 @@ def apply(
 
     mechanism = ""
     if restart:
-        mechanism = _restart_plasma()
+        mechanism = restart_plasma()
         time.sleep(2.0)
         if mechanism and not _alive():
             _write_atomic(destination, live_text)
-            _restart_plasma()
+            restart_plasma()
             raise RuntimeError(
                 "plasmashell no volvio a iniciar; se restauro el layout anterior"
             )
@@ -171,5 +171,5 @@ def revert() -> bool:
     if shell_backup.is_file():
         _write_atomic(shell_path, shell_backup.read_text(errors="replace"))
 
-    _restart_plasma()
+    restart_plasma()
     return True

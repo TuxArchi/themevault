@@ -16,7 +16,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.1.4**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.1.5**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME y Xfce, con menos horas de
 > prueba real: los reportes son bienvenidos.
 
@@ -107,6 +107,13 @@ Flujos:
   escritorio, en el orden real (`AppletOrder` en Plasma), con el nombre del
   tema y aviso si el widget no existe en este sistema. Incluye tamaño,
   posición, si el panel es flotante y su modo de ocultado.
+- **Widgets de terceros**: se respaldan los que instalaste en tu usuario
+  (`~/.local/share/plasma/plasmoids`). Si en la máquina destino faltan, el
+  diálogo de restauración los marca y ofrece instalarlos desde la copia o
+  buscarlos en la tienda.
+- **Tienda de widgets**: buscador integrado sobre store.kde.org (el mismo
+  proveedor que usa Plasma) para instalar sin salir de la app. Solo usa la red
+  cuando buscás o instalás.
 - **GNOME**: la barra superior aparece como panel (con sus extensiones) y el
   dock con sus ajustes — posición, tamaño de iconos, auto-ocultar y si está
   fijo. Al no ser una barra sólida no se recorta una tira del dock.
@@ -166,6 +173,9 @@ themevault restore <id> --dry-run    # ver el plan sin tocar nada
 themevault restore <id> --only theme # restaurar solo temas
 themevault restore <id> -y           # aplicar (crea punto de retorno antes)
 themevault rebuild <id>              # regenerar portada y widgets de una copia
+themevault install-widgets <id>      # instalar los widgets que trae la copia
+themevault widgets search "clima"    # buscar en la tienda
+themevault widgets install 2380036   # instalar un widget de la tienda
 themevault verify <id>               # verificar hashes
 themevault delete <id> -y            # borrar
 themevault ui --backup <id>          # abrir la GUI en el detalle

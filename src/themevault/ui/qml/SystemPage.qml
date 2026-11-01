@@ -8,6 +8,8 @@ Item {
     property string pageId: "system"
     property var info: ({})
 
+    signal openStore()
+
     Component.onCompleted: info = backend.systemInfo()
 
     component InfoCard: Rectangle {
@@ -60,20 +62,32 @@ Item {
         anchors.margins: 32
         spacing: 18
 
-        ColumnLayout {
-            spacing: 4
+        RowLayout {
+            Layout.fillWidth: true
 
-            Text {
-                text: "Sistema"
-                color: Theme.text
-                font.pixelSize: 26
-                font.weight: Font.DemiBold
+            ColumnLayout {
+                spacing: 4
+
+                Text {
+                    text: "Sistema"
+                    color: Theme.text
+                    font.pixelSize: 26
+                    font.weight: Font.DemiBold
+                }
+
+                Text {
+                    text: "Detección del entorno y herramientas disponibles"
+                    color: Theme.textDim
+                    font.pixelSize: 13
+                }
             }
 
-            Text {
-                text: "Detección del entorno y herramientas disponibles"
-                color: Theme.textDim
-                font.pixelSize: 13
+            Item { Layout.fillWidth: true }
+
+            AppButton {
+                text: "Tienda de widgets"
+                variant: "ghost"
+                onClicked: page.openStore()
             }
         }
 

@@ -25,7 +25,7 @@ from ..backup import BackupEngine
 from ..detect import detect_host, scan_system_assets
 from ..model import CATEGORIES, CATEGORY_LABELS, Manifest
 from ..preview import screenshot_tool
-from .. import screen_restore
+from .. import screen_restore, store_client, widgets_install
 from ..restore import OK, apply_plan, build_plan, missing_assets
 from ..screens import detect as detect_screens
 from ..widgets import from_items as widgets_from_items
@@ -62,6 +62,9 @@ STATUS_TEXT = {
     "restore": "Restaurando…",
     "verify": "Verificando la integridad…",
     "screens": "Aplicando el layout por pantalla…",
+    "installbt": "Instalando widgets…",
+    "store_search": "Buscando en la tienda…",
+    "store_install": "Instalando desde la tienda…",
 }
 
 
@@ -75,6 +78,9 @@ class Backend(QObject):
     backupDeleted = Signal(str)
     verified = Signal("QVariantMap")
     screenRestoreFinished = Signal("QVariantMap")
+    widgetsInstalled = Signal("QVariantMap")
+    storeResults = Signal("QVariantList")
+    storeInstalled = Signal("QVariantMap")
     failed = Signal(str, str)
 
     def __init__(self, root: Path | None = None, parent: QObject | None = None):
@@ -188,6 +194,37 @@ class Backend(QObject):
             return result
 
         self._submit("screens", work)
+
+    @Slot(str, "QVariantList")
+    def installBackupWidgets(self, backup_id: str, ids: list) -> None:  # noqa: N802
+        wanted = [str(i) for i in ids]
+
+        def work() -> dict:
+            manifest = self.engine.load(backup_id)
+            store = self.engine.store(backup_id)
+            result = widgets_install.install_from_backup(manifest, store, wanted or None)
+            if result["installed"]:
+                try:
+                    screen_restore.restart_plasma()
+                except Exception:
+                    pass
+            return result
+
+        self._submit("installbt", work)
+
+    @Slot(str)
+    def searchStore(self, query: str) -> None:  # noqa: N802
+        def work():
+            return store_client.search(query)
+
+        self._submit("store_search", work)
+
+    @Slot(int)
+    def installStoreWidget(self, item_id: int) -> None:  # noqa: N802
+        def work() -> dict:
+            return store_client.install(item_id)
+
+        self._submit("store_install", work)
 
     @Slot(str)
     def deleteBackup(self, backup_id: str) -> None:  # noqa: N802
@@ -381,6 +418,12 @@ class Backend(QObject):
         elif action == "screens":
             self.refresh()
             self.screenRestoreFinished.emit(result)
+        elif action == "installbt":
+            self.widgetsInstalled.emit(result)
+        elif action == "store_search":
+            self.storeResults.emit(result)
+        elif action == "store_install":
+            self.storeInstalled.emit(result)
 
     def _on_error(self, action: str, message: str, job: "_Job") -> None:
         self._jobs.discard(job)
@@ -441,13 +484,20 @@ class Backend(QObject):
                     "name": s.get("name", ""),
                     "summary": s.get("summary", ""),
                     "custom": bool(s.get("custom")),
+                    "width": s.get("width", 0),
+                    "height": s.get("height", 0),
                 }
                 for s in (manifest.preview.get("screens") or [])
             ],
             "targetScreens": [
-                {"index": index, "name": screen.name}
+                {
+                    "index": index,
+                    "name": screen.name,
+                    "width": screen.width,
+                    "height": screen.height,
+                }
                 for index, screen in enumerate(detect_screens())
             ],
             "missing": missing_assets(manifest),
-            "missingWidgets": [w["name"] for w in widgets if not w.get("installed", True)],
+            "missingWidgets": widgets_install.missing_from_backup(manifest),
         }

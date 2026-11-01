@@ -366,6 +366,47 @@ def cmd_rebuild(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_install_widgets(args: argparse.Namespace) -> int:
+    from . import widgets_install
+
+    engine = BackupEngine(args.root)
+    manifest = engine.resolve(args.id)
+    store = engine.store(manifest.id)
+    try:
+        result = widgets_install.install_from_backup(manifest, store, args.only)
+    except RuntimeError as exc:
+        print(red(f"Error: {exc}"))
+        return 1
+
+    for entry in result["installed"]:
+        print(green(f"  instalado  {entry['id']}"))
+    for entry in result["failed"]:
+        print(red(f"  fallo      {entry['id']}: {entry['message']}"))
+    if result["installed"]:
+        print(dim("\nReinicia plasmashell (o la sesion) para verlo en el panel."))
+    return 0 if not result["failed"] else 1
+
+
+def cmd_widgets(args: argparse.Namespace) -> int:
+    from . import store_client
+
+    try:
+        if args.action == "search":
+            found = store_client.search(args.target)
+            if not found:
+                print(dim("Sin resultados."))
+                return 0
+            for item in found:
+                print(f"  {cyan(str(item['id'])):>10}  {item['name']}  {dim(item['author'])}")
+            return 0
+        info = store_client.install(int(args.target))
+        print(green(f"Instalado {info['name']} ({info['version']})"))
+        return 0
+    except (store_client.StoreError, ValueError) as exc:
+        print(red(f"Error: {exc}"))
+        return 1
+
+
 def cmd_revert_layout(args: argparse.Namespace) -> int:
     """Vuelve al appletsrc anterior guardado por el restore por pantalla."""
     from . import screen_restore
@@ -437,6 +478,20 @@ def build_parser() -> argparse.ArgumentParser:
     delete.add_argument("id")
     delete.add_argument("-y", "--yes", action="store_true")
     delete.set_defaults(func=cmd_delete)
+
+    widgets = sub.add_parser("widgets", parents=[common], help="buscar o instalar widgets de la tienda")
+    widgets.add_argument("action", choices=("search", "install"))
+    widgets.add_argument("target", help="texto a buscar o id del widget")
+    widgets.set_defaults(func=cmd_widgets)
+
+    install = sub.add_parser(
+        "install-widgets",
+        parents=[common],
+        help="instala widgets que vienen dentro de una copia",
+    )
+    install.add_argument("id")
+    install.add_argument("--only", action="append", help="instalar solo estos ids")
+    install.set_defaults(func=cmd_install_widgets)
 
     revert = sub.add_parser(
         "revert-layout",

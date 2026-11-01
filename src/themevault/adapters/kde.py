@@ -36,6 +36,8 @@ DATA_TREES: tuple[tuple[str, str], ...] = (
     ("~/.local/share/kwin/scripts", "shell"),
     ("~/.local/share/konsole", "colorscheme"),
     ("~/.config/Kvantum", "theme"),
+    # Widgets que el usuario instalo (Discover / Obtener nuevos)
+    ("~/.local/share/plasma/plasmoids", "layout"),
 )
 
 

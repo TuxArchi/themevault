@@ -132,3 +132,47 @@ def test_revertir_vuelve_al_anterior(entorno):
     assert live.read_text() != LIVE
     assert screen_restore.revert() is True
     assert live.read_text() == LIVE
+
+
+# ---------------------------------------------------------- widgets / tienda
+
+
+def test_paquetes_del_respaldo(entorno):
+    from themevault import widgets_install
+
+    store, manifest, _live = entorno
+    assert widgets_install.backup_packages(manifest) == {}
+
+
+def test_tienda_filtra_por_tipo(monkeypatch):
+    from themevault import store_client
+
+    def fake_get(url, timeout=20):
+        return {
+            "data": [
+                {"id": 1, "name": "Reloj", "typename": "Plasma 6 Applets", "personid": "x"},
+                {"id": 2, "name": "Tema", "typename": "Plasma Themes", "personid": "y"},
+            ]
+        }
+
+    monkeypatch.setattr(store_client, "_get_json", fake_get)
+    found = store_client.search("reloj")
+    assert [f["name"] for f in found] == ["Reloj"]
+
+
+def test_tienda_sin_resultados(monkeypatch):
+    from themevault import store_client
+
+    monkeypatch.setattr(store_client, "_get_json", lambda url, timeout=20: {"data": []})
+    assert store_client.search("nada") == []
+    assert store_client.search("") == []
+
+
+def test_detalle_sin_enlace(monkeypatch):
+    from themevault import store_client
+
+    monkeypatch.setattr(
+        store_client, "_get_json", lambda url, timeout=20: {"data": [{"id": 1, "name": "x"}]}
+    )
+    with pytest.raises(store_client.StoreError):
+        store_client.details(1)

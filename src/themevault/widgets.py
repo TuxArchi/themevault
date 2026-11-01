@@ -157,6 +157,11 @@ def _split_order(raw: str) -> list[str]:
 # ------------------------------------------------------------------------ KDE
 
 
+def is_widget_installed(applet_id: str) -> bool:
+    """Si el plugin existe ahora mismo en este sistema."""
+    return _applet_installed(applet_id)
+
+
 def _applet_installed(applet_id: str) -> bool:
     for raw in PLASMOID_DIRS:
         if (expand(raw) / applet_id).is_dir():
