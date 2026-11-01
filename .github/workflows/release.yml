@@ -30,8 +30,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1 \
-            libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxcb-xkb1 \
-            libxrender1 libxi6 librsvg2-bin file xvfb
+            librsvg2-bin file
 
       - name: Python y empaquetado
         run: |
@@ -57,9 +56,10 @@ jobs:
           "$APPIMAGE" --appimage-extract AppRun >/dev/null
           grep -q 'QT_QUICK_BACKEND' squashfs-root/AppRun
 
-          # 3. arranque real (X11 virtual, sin offscreen: ejercita la ruta grafica)
-          xvfb-run -a -s "-screen 0 1600x1200x24" \
-            "$APPIMAGE" --root /tmp/vault --screenshot /tmp/app.png
+          # 3. renderiza la interfaz completa (QML + dependencias dentro del bundle).
+          #    La ruta con GPU real no se puede ejercitar aca: por eso el backend
+          #    por defecto es software y el paso 2 lo verifica.
+          QT_QPA_PLATFORM=offscreen "$APPIMAGE" --root /tmp/vault --screenshot /tmp/app.png
           test -s /tmp/app.png
 
       - name: Publicar
