@@ -366,6 +366,17 @@ def cmd_rebuild(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_revert_layout(args: argparse.Namespace) -> int:
+    """Vuelve al appletsrc anterior guardado por el restore por pantalla."""
+    from . import screen_restore
+
+    if screen_restore.revert():
+        print(green("Layout anterior restaurado y plasmashell reiniciado."))
+        return 0
+    print(red("No hay un respaldo .themevault.bak del layout."))
+    return 1
+
+
 def cmd_path(args: argparse.Namespace) -> int:
     engine = BackupEngine(args.root)
     print(engine.root)
@@ -426,6 +437,13 @@ def build_parser() -> argparse.ArgumentParser:
     delete.add_argument("id")
     delete.add_argument("-y", "--yes", action="store_true")
     delete.set_defaults(func=cmd_delete)
+
+    revert = sub.add_parser(
+        "revert-layout",
+        parents=[common],
+        help="deshace el ultimo restore por pantalla (usa el .bak)",
+    )
+    revert.set_defaults(func=cmd_revert_layout)
 
     rebuild = sub.add_parser("rebuild", parents=[common], help="regenera portada y widgets de una copia")
     rebuild.add_argument("id")

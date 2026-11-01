@@ -20,6 +20,8 @@ Popup {
     property bool safety: true
     property bool applying: false
     property string errorText: ""
+    property bool perScreen: false
+    property var screenMapping: ({})
 
     signal finished()
 
@@ -32,6 +34,8 @@ Popup {
         applying = false
         safety = true
         safetySwitch.checked = true
+        perScreen = false
+        screenMapping = ({})
         errorText = ""
         open()
         backend.requestPlan(id)
@@ -49,6 +53,69 @@ Popup {
         }
         selected = sel
         selectedCount = count
+
+        var map = ({})
+        var targets = p.targetScreens || []
+        var screens = p.screens || []
+        for (var i = 0; i < screens.length; i++) {
+            var source = screens[i].index
+            var chosenTarget = -1
+            for (var j = 0; j < targets.length; j++) {
+                if (targets[j].index === source) {
+                    chosenTarget = source
+                    break
+                }
+            }
+            if (chosenTarget < 0 && targets.length > 0)
+                chosenTarget = targets[0].index
+            map[source] = chosenTarget
+        }
+        screenMapping = map
+    }
+
+    function setTarget(source, target) {
+        var map = ({})
+        for (var key in dlg.screenMapping)
+            map[key] = dlg.screenMapping[key]
+        map[source] = target
+        dlg.screenMapping = map
+    }
+
+    function screenRows() {
+        var rows = []
+        var screens = (dlg.plan && dlg.plan.screens) || []
+        var targets = (dlg.plan && dlg.plan.targetScreens) || []
+        for (var i = 0; i < screens.length; i++) {
+            var source = screens[i]
+            var cells = []
+            for (var j = 0; j < targets.length; j++) {
+                cells.push({
+                    source: source.index,
+                    target: targets[j].index,
+                    label: targets[j].name,
+                    selected: dlg.screenMapping[source.index] === targets[j].index
+                })
+            }
+            cells.push({
+                source: source.index,
+                target: -1,
+                label: "No",
+                selected: dlg.screenMapping[source.index] === -1
+            })
+            rows.push({
+                label: (source.name || "") + "  ·  " + (source.summary || ""),
+                cells: cells
+            })
+        }
+        return rows
+    }
+
+    function selectedScreens() {
+        var count = 0
+        for (var key in dlg.screenMapping)
+            if (dlg.screenMapping[key] >= 0)
+                count++
+        return count
     }
 
     function toggle(name) {
@@ -74,7 +141,17 @@ Popup {
 
     function apply() {
         applying = true
-        backend.applyRestore(backupId, chosen(), safety)
+        if (dlg.perScreen) {
+            var list = []
+            for (var key in dlg.screenMapping) {
+                var target = dlg.screenMapping[key]
+                if (target >= 0)
+                    list.push({ source: parseInt(key), target: target })
+            }
+            backend.applyScreenRestore(backupId, list, safety)
+        } else {
+            backend.applyRestore(backupId, chosen(), safety)
+        }
     }
 
     Connections {
@@ -89,6 +166,20 @@ Popup {
             if (dlg.visible && r.id === dlg.backupId) {
                 dlg.applying = false
                 dlg.result = r
+                dlg.finished()
+            }
+        }
+
+        function onScreenRestoreFinished(r) {
+            if (dlg.opened && r.id === dlg.backupId) {
+                dlg.applying = false
+                dlg.result = {
+                    applied: r.screens || 0,
+                    failures: [],
+                    safety: r.safety || "",
+                    safetyError: "",
+                    perScreen: true
+                }
                 dlg.finished()
             }
         }
@@ -316,6 +407,7 @@ Popup {
                     Layout.rightMargin: 18
                     implicitHeight: 52
                     radius: Theme.radiusSmall
+                    opacity: dlg.perScreen ? 0.35 : 1
                     color: rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
 
                     property bool usable: modelData.ok > 0
@@ -394,10 +486,118 @@ Popup {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: catRow.usable ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        enabled: !dlg.perScreen
                         onClicked: {
                             if (catRow.usable)
                                 dlg.toggle(modelData.name)
                         }
+                    }
+                }
+            }
+
+            Rectangle {
+                visible: dlg.plan !== null && dlg.plan.kde
+                         && (dlg.plan.screens || []).length > 1
+                         && (dlg.plan.targetScreens || []).length > 0
+                Layout.fillWidth: true
+                Layout.leftMargin: 26
+                Layout.rightMargin: 26
+                Layout.topMargin: 14
+                implicitHeight: screenCol.implicitHeight + 26
+                radius: Theme.radiusSmall
+                color: Theme.surfaceAlt
+
+                ColumnLayout {
+                    id: screenCol
+                    anchors.fill: parent
+                    anchors.margins: 13
+                    spacing: 9
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        ColumnLayout {
+                            spacing: 1
+
+                            Text {
+                                text: "Restaurar por pantalla"
+                                color: Theme.text
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                            }
+
+                            Text {
+                                text: "Elegí qué pantalla de la copia va en cuál de tu equipo."
+                                color: Theme.textFaint
+                                font.pixelSize: 10
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        AppSwitch {
+                            checked: dlg.perScreen
+                            onToggled: function(value) { dlg.perScreen = value }
+                        }
+                    }
+
+                    Repeater {
+                        model: dlg.perScreen ? dlg.screenRows() : []
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 5
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.label
+                                color: Theme.textDim
+                                font.pixelSize: 10
+                                elide: Text.ElideRight
+                            }
+
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 6
+
+                                Repeater {
+                                    model: modelData.cells
+
+                                    Rectangle {
+                                        height: 26
+                                        width: cellText.implicitWidth + 20
+                                        radius: 13
+                                        color: modelData.selected ? Theme.accent : Theme.surface
+                                        border.width: 1
+                                        border.color: modelData.selected ? Theme.accent : Theme.border
+
+                                        Text {
+                                            id: cellText
+                                            anchors.centerIn: parent
+                                            text: modelData.label
+                                            color: modelData.selected ? "#ffffff" : Theme.textDim
+                                            font.pixelSize: 10
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: dlg.setTarget(modelData.source, modelData.target)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Text {
+                        visible: dlg.perScreen
+                        Layout.fillWidth: true
+                        text: "Se reiniciará plasmashell (~2 s) y solo se aplican las pantallas elegidas; las categorías de arriba no se usan. Tus ventanas no se cierran."
+                        color: Theme.warn
+                        font.pixelSize: 10
+                        wrapMode: Text.WordWrap
                     }
                 }
             }
@@ -472,7 +672,14 @@ Popup {
             Text {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 14
-                text: dlg.result ? dlg.result.applied + (dlg.result.applied === 1 ? " elemento restaurado" : " elementos restaurados") : ""
+                text: {
+                    if (!dlg.result)
+                        return ""
+                    var n = dlg.result.applied
+                    if (dlg.result.perScreen)
+                        return n + (n === 1 ? " pantalla restaurada" : " pantallas restauradas")
+                    return n + (n === 1 ? " elemento restaurado" : " elementos restaurados")
+                }
                 color: Theme.text
                 font.pixelSize: 16
                 font.weight: Font.DemiBold
@@ -519,7 +726,8 @@ Popup {
                 Layout.rightMargin: 26
                 Layout.topMargin: 12
                 Layout.fillWidth: true
-                visible: dlg.result && dlg.result.applied > 0 && dlg.plan && (dlg.plan.de === "kde" || dlg.plan.de === "gnome")
+                visible: dlg.result && !dlg.result.perScreen && dlg.result.applied > 0
+                         && dlg.plan && (dlg.plan.de === "kde" || dlg.plan.de === "gnome")
                 text: "Reiniciá la sesión para ver todos los cambios."
                 color: Theme.textDim
                 font.pixelSize: 12
@@ -555,9 +763,11 @@ Popup {
 
             AppButton {
                 visible: dlg.result === null
-                text: "Restaurar " + dlg.selectedCount + (dlg.selectedCount === 1 ? " elemento" : " elementos")
+                text: dlg.perScreen
+                      ? ("Restaurar " + dlg.selectedScreens() + (dlg.selectedScreens() === 1 ? " pantalla" : " pantallas"))
+                      : ("Restaurar " + dlg.selectedCount + (dlg.selectedCount === 1 ? " elemento" : " elementos"))
                 variant: "primary"
-                enabled: dlg.selectedCount > 0 && !dlg.applying
+                enabled: (dlg.perScreen ? dlg.selectedScreens() > 0 : dlg.selectedCount > 0) && !dlg.applying
                 onClicked: dlg.apply()
             }
 

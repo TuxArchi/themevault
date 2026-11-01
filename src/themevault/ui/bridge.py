@@ -25,7 +25,9 @@ from ..backup import BackupEngine
 from ..detect import detect_host, scan_system_assets
 from ..model import CATEGORIES, CATEGORY_LABELS, Manifest
 from ..preview import screenshot_tool
+from .. import screen_restore
 from ..restore import OK, apply_plan, build_plan, missing_assets
+from ..screens import detect as detect_screens
 from ..widgets import from_items as widgets_from_items
 from ..widgets import grouped as group_widgets
 from ..util import human_size, which
@@ -59,6 +61,7 @@ STATUS_TEXT = {
     "plan": "Analizando la copia…",
     "restore": "Restaurando…",
     "verify": "Verificando la integridad…",
+    "screens": "Aplicando el layout por pantalla…",
 }
 
 
@@ -71,6 +74,7 @@ class Backend(QObject):
     restoreFinished = Signal("QVariantMap")
     backupDeleted = Signal(str)
     verified = Signal("QVariantMap")
+    screenRestoreFinished = Signal("QVariantMap")
     failed = Signal(str, str)
 
     def __init__(self, root: Path | None = None, parent: QObject | None = None):
@@ -153,6 +157,37 @@ class Backend(QObject):
             }
 
         self._submit("restore", work)
+
+    @Slot(str, "QVariantList", bool)
+    def applyScreenRestore(self, backup_id: str, mapping: list, safety: bool) -> None:  # noqa: N802
+        pairs: dict[int, int] = {}
+        for entry in mapping:
+            try:
+                source = int(entry.get("source"))
+                target = int(entry.get("target"))
+            except (AttributeError, TypeError, ValueError):
+                continue
+            if target >= 0:
+                pairs[source] = target
+
+        def work() -> dict:
+            manifest = self.engine.load(backup_id)
+            store = self.engine.store(backup_id)
+            safety_id = ""
+            if safety:
+                try:
+                    snapshot = BackupEngine(self.engine.root).create(
+                        label="Punto de restauracion (pantallas)", preview=False
+                    )
+                    safety_id = snapshot.id
+                except Exception:
+                    pass
+            result = screen_restore.apply(manifest, store, pairs)
+            result["id"] = backup_id
+            result["safety"] = safety_id
+            return result
+
+        self._submit("screens", work)
 
     @Slot(str)
     def deleteBackup(self, backup_id: str) -> None:  # noqa: N802
@@ -343,6 +378,9 @@ class Backend(QObject):
             self.restoreFinished.emit(result)
         elif action == "verify":
             self.verified.emit(result)
+        elif action == "screens":
+            self.refresh()
+            self.screenRestoreFinished.emit(result)
 
     def _on_error(self, action: str, message: str, job: "_Job") -> None:
         self._jobs.discard(job)
@@ -396,6 +434,20 @@ class Backend(QObject):
             "deTotal": len(actions),
             "deApplicable": sum(g["ok"] for g in categories),
             "categories": categories,
+            "kde": manifest.de == "kde",
+            "screens": [
+                {
+                    "index": s.get("index", 0),
+                    "name": s.get("name", ""),
+                    "summary": s.get("summary", ""),
+                    "custom": bool(s.get("custom")),
+                }
+                for s in (manifest.preview.get("screens") or [])
+            ],
+            "targetScreens": [
+                {"index": index, "name": screen.name}
+                for index, screen in enumerate(detect_screens())
+            ],
             "missing": missing_assets(manifest),
             "missingWidgets": [w["name"] for w in widgets if not w.get("installed", True)],
         }

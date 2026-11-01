@@ -16,7 +16,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.1.2**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.1.3**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME y Xfce, con menos horas de
 > prueba real: los reportes son bienvenidos.
 
@@ -113,6 +113,10 @@ Flujos:
 - **Restaurar**: abre el plan, muestra qué se puede aplicar, qué queda
   bloqueado y qué temas faltan en este sistema. Se elige por categoría y hay
   un switch para crear el punto de retorno previo.
+- **Restaurar por pantalla** (KDE): si la copia tiene varias pantallas, elegís
+  cuál restaurar y en qué monitor de tu equipo. Requiere reiniciar
+  `plasmashell` (~2 s) y deja un `.bak` del layout por si querés volver atrás
+  con `themevault revert-layout`.
 - **Eliminar**: confirmación desde el detalle.
 - **Actualizar** (`Ctrl+R`), `Esc` vuelve atrás.
 

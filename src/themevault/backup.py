@@ -11,9 +11,10 @@ from pathlib import Path
 from .adapters import Adapter, Collector, detected_adapters
 from .detect import detect_host
 from .model import Manifest
+from . import plasma_layout
 from .preview import build_preview
 from .store import BlobStore
-from .util import default_root, human_size
+from .util import default_root, home, human_size, is_within, xdg_data_home
 from .widgets import enrich_containers
 from .widgets import from_items as widgets_from_items
 
@@ -98,6 +99,7 @@ class BackupEngine:
                 themes=host["themes"],
                 containers=layout["containers"],
             )
+            self._attach_screens(manifest, collector.items, store)
             self._write_manifest(staging, manifest)
 
             final = self.backups_dir / backup_id
@@ -196,6 +198,43 @@ class BackupEngine:
             candidate = f"{base}-{counter}"
             counter += 1
         return candidate
+
+    @staticmethod
+    def _attach_screens(manifest: Manifest, items, store: BlobStore) -> None:
+        """Agrega a cada pantalla sus containments y el archivo de fondo."""
+        screens = (manifest.preview or {}).get("screens") or []
+        if not screens:
+            return
+        source = next(
+            (i for i in items if (i.source or "").endswith(plasma_layout.APPLETSRC) and i.blob),
+            None,
+        )
+        if source is None:
+            return
+        try:
+            text = store.read(source.blob).decode("utf-8", "replace")
+        except OSError:
+            return
+
+        parser = plasma_layout.parse_layout(text)
+        grouped = plasma_layout.by_screen(parser)
+        wallpapers = plasma_layout.wallpapers_by_screen(parser)
+
+        for entry in screens:
+            index = int(entry.get("index") or 0)
+            entry["containments"] = grouped.get(index, [])
+            path = wallpapers.get(index)
+            if not path:
+                continue
+            candidate = Path(path)
+            if not candidate.is_file() or not is_within(candidate, home()):
+                continue
+            try:
+                blob, sha, size = store.put_file(candidate)
+            except OSError:
+                continue
+            entry["wallpaper"] = blob
+            entry["wallpaper_name"] = candidate.name
 
     @staticmethod
     def _write_manifest(directory: Path, manifest: Manifest) -> None:

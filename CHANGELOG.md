@@ -3,6 +3,23 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.3] - 2026-11-01
+
+### Agregado
+
+- **Restaurar por pantalla (KDE Plasma)**: en el diálogo de restauración podés
+  elegir qué pantalla de la copia va en qué monitor del equipo actual.
+  - Mezcla el `appletsrc`: renombra containments y applets para no chocar,
+    reescribe `AppletOrder` y `SystrayContainmentId`, actualiza `lastScreen` y
+    la actividad vigente, y reemplaza solo lo que hoy vive en la pantalla
+    destino. El resto del layout no se toca.
+  - Restaura el **archivo de fondo** de cada pantalla, copiándolo a
+    `~/.local/share/wallpapers/themevault/` y reescribiendo la ruta.
+  - Guarda un `.bak` del layout y reinicia `plasmashell`; si no vuelve a
+    levantar, revierte solo.
+- `themevault revert-layout` para volver al layout anterior.
+- Las pantallas del respaldo guardan sus `containments` y su fondo.
+
 ## [0.1.2] - 2026-11-01
 
 ### Corregido
@@ -87,6 +104,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.1.3]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.3
 [0.1.2]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.2
 [0.1.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.1
 [0.1.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.1.0
