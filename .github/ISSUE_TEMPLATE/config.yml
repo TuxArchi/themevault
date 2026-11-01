@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Apoyar el proyecto
+    url: https://ko-fi.com/tuxarchi
+    about: Si ThemeVault te resulta útil, podés invitarme un café. Se agradece de verdad.
+  - name: Documentación e instalación
+    url: https://tuxarchi.github.io/themevault/
+    about: Guía de instalación, capturas y preguntas frecuentes.
+  - name: Vulnerabilidades de seguridad
+    url: https://github.com/TuxArchi/themevault/security/advisories/new
+    about: Reportá problemas de seguridad de forma privada, no en un issue público.

@@ -1,0 +1,44 @@
+name: Idea o mejora
+description: Proponé una función o un cambio
+title: "[idea]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Contá el problema antes que la solución: a veces hay una forma más simple
+        de resolverlo.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qué problema resuelve
+      placeholder: "Cuando tengo dos paneles, ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Tu propuesta
+    validations:
+      required: true
+
+  - type: input
+    id: desktop
+    attributes:
+      label: Escritorio donde lo usarías
+      placeholder: "KDE Plasma, GNOME, Xfce, otro..."
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas que consideraste
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Antes de enviar
+      options:
+        - label: Busqué en los issues existentes y no está propuesto.
+          required: true

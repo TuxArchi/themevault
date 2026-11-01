@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ThemeVault — respaldá la personalización de tu escritorio Linux</title>
+  <meta name="description" content="Guarda una foto del aspecto de tu escritorio Linux —temas, iconos, cursores, fuentes, fondos, widgets y barras— y volvé a ella cuando quieras. KDE Plasma, GNOME y Xfce.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ThemeVault">
+  <meta property="og:description" content="Respaldo y restauración de la personalización del escritorio Linux.">
+  <meta property="og:image" content="assets/social.png">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <a class="brand" href="#top">
+    <span class="brand-mark">T</span>
+    <span>ThemeVault</span>
+  </a>
+  <nav>
+    <a href="#capturas">Capturas</a>
+    <a href="#funciones">Funciones</a>
+    <a href="#instalar">Instalar</a>
+    <a href="#apoyar">Apoyar</a>
+    <a class="nav-gh" href="https://github.com/TuxArchi/themevault">GitHub</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="glow"></div>
+    <div class="hero-copy">
+      <span class="pill">v0.1.0 · GPL-3.0 · Linux</span>
+      <h1>Tu escritorio,<br><em>guardado</em>.</h1>
+      <p class="lead">
+        ThemeVault toma una foto del estado visual de tu escritorio —temas, iconos,
+        cursores, fuentes, fondos, widgets y barras— y te deja volver a ella cuando quieras,
+        incluso en otra máquina.
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/TuxArchi/themevault/releases/latest">
+          Descargar AppImage
+        </a>
+        <a class="btn ghost" href="https://github.com/TuxArchi/themevault">
+          Ver en GitHub
+        </a>
+        <a class="btn kofi" href="https://ko-fi.com/tuxarchi">
+          <span aria-hidden="true">♥</span> Invitame un café
+        </a>
+      </div>
+      <p class="fineprint">
+        Funciona en KDE Plasma, GNOME y Xfce · X11 y Wayland · Sin telemetría
+      </p>
+    </div>
+    <div class="hero-shot">
+      <img src="galeria.png" alt="Galería de copias guardadas en ThemeVault" loading="eager">
+    </div>
+  </section>
+
+  <section id="capturas" class="section">
+    <h2>Así se ve</h2>
+    <p class="section-lead">
+      Cada copia guarda su portada: el escritorio sin ventanas, una muestra del cursor,
+      los iconos y la paleta. Y una tira de cada barra de tareas.
+    </p>
+
+    <div class="shots">
+      <figure>
+        <img src="galeria.png" alt="Galería con portadas, paleta y selector de monitor">
+        <figcaption><strong>Galería</strong> — portadas por monitor, con botones ‹ › para cambiar de pantalla.</figcaption>
+      </figure>
+      <figure>
+        <img src="detalle.png" alt="Detalle de una copia con widgets y muestras del tema">
+        <figcaption><strong>Detalle</strong> — widgets con su geometría, muestra del cursor, iconos y barra.</figcaption>
+      </figure>
+      <figure>
+        <img src="sistema.png" alt="Vista del sistema con adaptadores y herramientas">
+        <figcaption><strong>Sistema</strong> — distro, escritorio detectado, adaptadores y herramientas.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="funciones" class="section">
+    <h2>Qué guarda</h2>
+    <div class="cards">
+      <article class="card">
+        <h3>Temas y estilos</h3>
+        <p>Tema GTK/Qt, iconos, cursores, esquemas de color y fuentes de usuario, con deduplicación real por contenido.</p>
+      </article>
+      <article class="card">
+        <h3>Ajustes del escritorio</h3>
+        <p>dconf para GNOME, xfconf para Xfce y los INI de Plasma. No solo copia archivos: también reaplica la configuración.</p>
+      </article>
+      <article class="card">
+        <h3>Widgets y paneles</h3>
+        <p>Qué widget está en cada panel o escritorio, en el orden real, con tamaño, posición, flotante y modo de ocultado.</p>
+      </article>
+      <article class="card">
+        <h3>Portada compuesta</h3>
+        <p>Captura del escritorio sin ventanas, muestra del cursor y de los iconos, paleta y tira de cada barra de tareas.</p>
+      </article>
+      <article class="card">
+        <h3>Restauración segura</h3>
+        <p>Plan previo, restauración selectiva por categoría, punto de retorno automático y nada fuera de tu <code>$HOME</code>.</p>
+      </article>
+      <article class="card">
+        <h3>Multi-monitor</h3>
+        <p>Detecta cada pantalla, recorta la captura y genera una portada por monitor. Cambiás de imagen desde la galería.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="instalar" class="section">
+    <h2>Instalar</h2>
+
+    <div class="install-row">
+      <div class="install-block">
+        <h3>AppImage <span class="tag">recomendado</span></h3>
+        <p>Un solo archivo, sin dependencias. Descargalo desde la última release.</p>
+        <pre><code>chmod +x ThemeVault-*.AppImage
+./ThemeVault-*.AppImage</code></pre>
+      </div>
+
+      <div class="install-block">
+        <h3>pip</h3>
+        <p>Si ya tenés Python 3.10 o superior y un entorno virtual:</p>
+        <pre><code>pip install "themevault[gui]"
+themevault ui</code></pre>
+      </div>
+
+      <div class="install-block">
+        <h3>Desde el código</h3>
+        <p>Para probar el último cambio o colaborar:</p>
+        <pre><code>git clone https://github.com/TuxArchi/themevault
+cd themevault
+python3 -m venv .venv
+.venv/bin/pip install -e ".[gui]"
+.venv/bin/themevault ui</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="apoyar" class="section support">
+    <div class="support-card">
+      <h2>¿Te ahorra tiempo?</h2>
+      <p>
+        ThemeVault es libre y gratuito, sin anuncios ni telemetría, y lo mantengo en mi
+        tiempo libre. Si te resulta útil, <strong>invitame un café</strong>: ayuda a
+        dedicarle más horas, probar más escritorios y sostener las releases.
+      </p>
+      <a class="btn kofi big" href="https://ko-fi.com/tuxarchi">
+        <span aria-hidden="true">♥</span> Apoyar en Ko-fi
+      </a>
+      <p class="fineprint">
+        También podés ayudar reportando bugs, probando en tu distribución o
+        contribuyendo código.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>
+    <strong>ThemeVault</strong> · GPL-3.0-or-later ·
+    <a href="https://github.com/TuxArchi/themevault">GitHub</a> ·
+    <a href="https://github.com/TuxArchi/themevault/issues">Issues</a> ·
+    <a href="https://ko-fi.com/tuxarchi">Ko-fi</a>
+  </p>
+  <p class="fineprint">
+    KDE, Plasma, GNOME y Xfce son marcas de sus respectivos proyectos. ThemeVault no está afiliado a ellos.
+  </p>
+</footer>
+
+</body>
+</html>

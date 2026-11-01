@@ -1,0 +1,83 @@
+name: Reporte de error
+description: Algo no funciona como debería
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por tomarte el tiempo. Cuantos más datos, más rápido se arregla.
+        Si podés, adjuntá una captura de la app.
+
+  - type: input
+    id: version
+    attributes:
+      label: Versión de ThemeVault
+      description: Salida de `themevault --version`
+      placeholder: "themevault 0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: Distribución y escritorio
+      placeholder: "Arch Linux · KDE Plasma 6.8 · Wayland"
+    validations:
+      required: true
+
+  - type: textarea
+    id: detect
+    attributes:
+      label: Salida de `themevault detect`
+      description: Ayuda a ver adaptadores y herramientas disponibles.
+      render: shell
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. Abrí la app
+        2. Creé una copia
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Qué esperabas y qué pasó
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errores o logs
+      description: Si la app se lanzó desde una terminal, pegá la salida.
+      render: shell
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Dónde ocurre
+      multiple: true
+      options:
+        - Crear copia
+        - Restaurar
+        - Portada / capturas
+        - Widgets y paneles
+        - Interfaz gráfica
+        - CLI
+        - Otro
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Antes de enviar
+      options:
+        - label: Busqué en los issues existentes y no está reportado.
+          required: true
+        - label: Probé con la última versión publicada.
+          required: true

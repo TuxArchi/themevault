@@ -1,0 +1,4 @@
+#!/bin/sh
+# AppRun del AppImage: arranca el binario incluido.
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/bin/ThemeVault" "$@"

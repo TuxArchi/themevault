@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=ThemeVault
+GenericName=Backup del escritorio
+Comment=Respaldo y restauracion de la personalizacion del escritorio Linux
+Exec=ThemeVault
+Icon=themevault
+Terminal=false
+Categories=Settings;DesktopSettings;
+Keywords=tema;iconos;escritorio;backup;restore;theme;desktop;
+X-AppImage-Name=ThemeVault
+X-AppImage-Version=0.1.0

@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+recursive-include src/themevault/ui/qml *
+recursive-include docs *.png *.html *.css
+recursive-include packaging *
