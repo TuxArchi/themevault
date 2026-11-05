@@ -5,44 +5,52 @@ y solo sale de ahí si vos exportás un perfil y lo publicás a mano.
 
 ## Qué contiene un perfil
 
-Un perfil no es una copia. Es una descripción del aspecto, generada con una
-**lista blanca** de campos:
+Un perfil es un **bundle saneado**, generado con una **lista blanca** de
+campos:
 
 | Se comparte | Ejemplo |
 |---|---|
 | Nombre, autor, licencia, escritorio | `"Catppuccin Mocha"`, `@tuxarchi`, `CC-BY-SA-4.0`, `kde` |
 | Nombres de tema | `icons: Papirus-Dark`, `cursor: Breeze` |
-| Ajustes de apariencia | `ColorScheme=CatppuccinMocha`, `gtk-theme-name=Breeze` |
-| Paleta | derivada del **esquema de color**, no del wallpaper |
-| Portada | solo si la incluís explícitamente |
+| Apariencia | colores, bordes, gaps, fuentes, temas |
+| Fondo | imagen o video, **solo si lo activás** |
+| Layout | paneles, posiciones y widgets aplicados |
+| Atajos seguros | solo combinaciones sin rutas, URLs, secretos ni scripts |
+| Plugins de terceros | código declarado, con hash y licencia |
+| Paleta | derivada del esquema de color |
+| Portada | generada desde el fondo, no desde una captura |
 
 ## Qué **nunca** se incluye
 
 - Rutas absolutas, `~`, nombres de usuario o hostname.
-- Archivos de la copia: temas, iconos, fuentes, wallpapers, `files/`.
-- Atajos de teclado, comandos o texto de configuración de Hyprland.
-- Nombres de archivos del escritorio, títulos de ventanas o historial de apps.
-- UUIDs de actividad, geometrías de pantalla o configuración de layouts.
-- Texto de widgets (notas, portapapeles, favoritos).
-- La captura del escritorio: puede mostrar tu fondo y tus cosas. Solo se
-  incluye si activás «incluir portada» y lo ves en la vista previa.
+- Captura del escritorio o ventanas abiertas.
+- Historial de comandos, apps favoritas, tokens, cuentas o emails.
+- Configuración interna de shells (Noctalia, DMS, Quickshell, AGS).
+- Scripts personales, `exec`, autostart o reglas de ventanas.
+- Atajos con rutas, URLs, secretos o scripts.
+- Configuración privada de widgets (notas, calendarios, feeds).
+- Archivos de temas/iconos/cursor salvo que se declaren explícitamente con
+  licencia y hash.
 
 ## Cómo se publica
 
 1. Desde el detalle de una copia, **Compartir…** (o `themevault
-   export-profile` en la terminal) genera `profile.json` (+ `cover.png` si lo
-   pediste).
+   export-profile` en la terminal) genera `profile.json`, el fondo, la portada
+   y los plugins declarados.
 2. La app muestra **qué se comparte y qué se descarta** antes de exportar; la
    portada es un switch aparte.
-3. **Vos revisás el archivo** antes de nada.
-4. Lo enviás como pull request al repositorio de perfiles. `themevault
+3. Si el fondo es un video, se re-encodea con ffmpeg sin audio ni metadatos y
+   se limita a 10 minutos / 50 MB.
+4. **Vos revisás el archivo** antes de nada.
+5. Lo enviás como pull request al repositorio de perfiles. `themevault
    publish-profile` valida, copia al clon y regenera el índice; con `--pr`
    abre el pull request (siempre con confirmación).
    El `author` tiene que ser **tu usuario de GitHub** y coincidir con la cuenta
    que abre el PR; el CI lo verifica y bloquea que se publique o edite un
    perfil ajeno.
-5. Un validador automático rechaza rutas, binarios, campos desconocidos y
-   tamaños excesivos; después lo revisa una persona.
+6. Un validador automático rechaza rutas, scripts de instalación, campos
+   desconocidos, hashes inválidos y tamaños excesivos. Los plugins/binarios
+   declarados se revisan aparte y requieren confirmación al aplicarse.
 
 Sin ese paso manual no hay publicación. La aplicación nunca abre una conexión
 para subir datos.
@@ -56,6 +64,7 @@ perfil ni ningún dato tuyo: la publicación sigue siendo manual.
 | Ruta | Contenido |
 |---|---|
 | `~/.local/share/themevault/backups/` | tus copias (configuración y archivos) |
+| `~/.local/share/themevault/wallpapers/` | fondos aplicados desde perfiles de comunidad |
 | `~/.cache/themevault/thumbs/` | miniaturas |
 | `~/.cache/themevault/assets/` | iconos y cursores rasterizados |
 | `~/.cache/themevault/community.json` | índice de perfiles (fase 2) |

@@ -3,6 +3,31 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.8.0] - 2026-11-05
+
+### Agregado
+
+- **Perfiles de comunidad como bundle aplicable**: fondo, apariencia, layout,
+  atajos seguros y plugins embebidos.
+- **Video wallpapers**: transcodificación con ffmpeg a MP4 H.264 sin audio,
+  hasta 10 minutos / 50 MB, frame estático de respaldo y aplicación con
+  `mpvpaper` en Wayland.
+- **Plugins de terceros**: exportación e instalación de widgets KDE, extensiones
+  GNOME/Cinnamon y plugins Budgie desde el propio perfil.
+- **Atajos seguros**: se comparten solo los que no contienen rutas, URLs,
+  secretos ni scripts.
+- **Detección de ffmpeg/ffprobe** y guía de instalación por distro.
+- Validación de bundles y videos en el repositorio de perfiles.
+
+### Limitado
+
+- El layout y los atajos se incluyen en el perfil y se muestran; su aplicación
+  automática por entorno queda para la siguiente fase.
+- Los plugins binarios de Xfce/LXQt/COSMIC dependen de la arquitectura y la
+  distro; se recomienda referencia de paquete/GitHub.
+- Los videos solo se aplican con `mpvpaper` en Wayland; en el resto se usa el
+  frame estático.
+
 ## [0.7.0] - 2026-11-05
 
 ### Agregado
@@ -323,6 +348,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.8.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.8.0
 [0.7.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.7.0
 [0.6.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.6.0
 [0.5.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.5.0

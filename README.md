@@ -18,7 +18,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.7.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.8.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME, Xfce, Cinnamon, MATE, Budgie,
 > LXQt, COSMIC, Hyprland, niri, Sway, River, Wayfire y labwc, con menos horas
 > de prueba real en algunos entornos: los reportes son bienvenidos.
@@ -125,8 +125,11 @@ Una sola ventana, tres vistas:
 - **Comunidad**: perfiles de otras personas con portada, búsqueda y filtro por
   escritorio. El detalle lista los requisitos («necesita Papirus-Dark») y se
   aplica con el mismo motor de restauración que una copia.
-- **Compartir**: desde el detalle de una copia, genera un perfil publicable con
-  vista previa de lo que se comparte y portada opcional.
+- **Compartir**: desde el detalle de una copia, genera un bundle publicable con
+  fondo (imagen o video), apariencia, layout, atajos seguros y plugins de
+  terceros, con vista previa de lo que se comparte.
+- **Video wallpapers**: se comprimen con ffmpeg, se les quita audio/metadatos y
+  se aplican con `mpvpaper` en Wayland; si no se puede, se usa un frame fijo.
 
 Flujos:
 
@@ -367,6 +370,11 @@ src/themevault/
 ├── privacy.py       lista blanca de configuración segura
 ├── backup.py        motor de respaldo
 ├── restore.py       plan, aplicación, rollback
+├── profile.py       bundle de comunidad y lista blanca
+├── profile_bundle.py wallpaper y plugins embebidos
+├── profile_apply.py aplicación de bundles
+├── wallpaper_apply.py fondos por compositor
+├── video.py         ffmpeg: video wallpapers
 ├── adapters/
 │   ├── base.py      Collector + contrato de adaptador
 │   ├── gnome.py     dconf
@@ -432,6 +440,8 @@ Y registrarlo en `adapters/__init__.py`. No hay que tocar el core ni la GUI.
 - `tests/test_compositors.py`: niri, Sway, River, Wayfire y labwc, includes,
   atajos, shells Wayland y filtro de archivos personales.
 - `tests/test_desktops.py`: Cinnamon, MATE, Budgie, LXQt, i3, Openbox y COSMIC.
+- `tests/test_profile_bundle.py`: wallpaper, video con ffmpeg, plugins embebidos,
+  atajos seguros y aplicación de perfiles.
 
 ---
 
@@ -447,9 +457,9 @@ para instalarlo en el menú de aplicaciones. Para capturas automáticas o CI,
 
 La sección **Comunidad** muestra perfiles publicados por otras personas: grilla
 con portadas, búsqueda, filtros por escritorio y detalle con los requisitos
-(«necesita Papirus-Dark»). Aplicar un perfil usa **el mismo motor de
-restauración** que una copia: plan previo, punto de retorno y rollback. Los
-temas e iconos se instalan aparte (paquete de la distro o tienda).
+(«necesita Papirus-Dark»). Un perfil puede incluir fondo, apariencia, layout,
+atajos seguros y plugins embebidos. Aplicarlo usa **el mismo motor de
+restauración** que una copia: plan previo, punto de retorno y rollback.
 
 ![Comunidad](docs/comunidad.png)
 
@@ -457,14 +467,26 @@ temas e iconos se instalan aparte (paquete de la distro o tienda).
 
 Desde el detalle de una copia, **Compartir…** abre un formulario con nombre,
 autor, licencia y descripción. Antes de exportar muestra exactamente qué se
-comparte (ajustes, requisitos y paleta) y qué queda afuera; la portada es un
-switch aparte que avisa que puede mostrar tu fondo. Si el id ya existe en la
-comunidad, sugiere otro.
+comparte (fondo, apariencia, layout, atajos seguros, plugins y paleta) y qué
+queda afuera. Si el id ya existe en la comunidad, sugiere otro.
+
+Los **videos de fondo** se re-encodean con ffmpeg a MP4 H.264 sin audio ni
+metadatos, hasta 10 minutos / 50 MB. Si el escritorio no soporta video, se usa
+el frame estático de respaldo. La app detecta `ffmpeg`/`ffprobe` y muestra el
+comando de instalación de la distro si faltan.
 
 ![Compartir](docs/compartir.png)
 
-Exporta en `<carpeta>/<id>/profile.json` (más `cover.png` si lo pediste). Para
-publicarlo, con el repositorio clonado:
+Exporta en `<carpeta>/<id>/`:
+
+```text
+profile.json
+cover.jpg
+wallpaper.mp4 o wallpaper.jpg
+plugins/<widget>.tar.gz
+```
+
+Para publicarlo, con el repositorio clonado:
 
 ```bash
 themevault publish-profile ~/themevault-perfiles/mi-estilo
@@ -483,9 +505,10 @@ themevault export-profile <tu-copia> --author tu-usuario-de-github --name "Mi es
 themevault publish-profile ./mi-estilo --pr
 ```
 
-Un perfil **nunca** incluye rutas, historial ni archivos de temas: es una
-**lista blanca de campos** (nombre, autor, licencia, escritorio, nombres de
-tema, ajustes de apariencia, paleta y, si lo pedís, la portada).
+Un perfil **nunca** incluye rutas, historial, tokens, capturas de ventanas,
+scripts personales ni configuración interna de shells. Solo comparte una
+**lista blanca**: fondo, apariencia, layout, atajos seguros, plugins declarados,
+nombres de tema, paleta y portada generada desde el fondo.
 
 **El autor es tu usuario de GitHub.** El CI de
 [themevault-profiles](https://github.com/TuxArchi/themevault-profiles) valida
@@ -542,6 +565,11 @@ distribución y mandar un pull request.
   fuera de sus carpetas de configuración.
 - Wayfire y labwc se recargan al reiniciar el compositor o con su comando
   específico; no se ejecuta nada automáticamente.
+- El bundle de comunidad aplica fondo, apariencia, settings y plugins. Los
+  atajos y el layout se incluyen y se muestran, pero su aplicación automática
+  por entorno todavía es manual en esta versión.
+- Los videos de fondo necesitan `mpvpaper` en Wayland; en el resto se usa el
+  frame estático. Sin `ffmpeg`/`ffprobe` no se pueden exportar videos.
 - Cinnamon, MATE y Budgie dependen de dconf; sin `dconf` se respaldan los
   archivos de temas/extensiones, pero no los ajustes lógicos.
 - COSMIC usa RON y sus archivos de configuración no tienen extensión; se

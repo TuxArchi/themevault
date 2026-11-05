@@ -8,6 +8,7 @@ aparte para que la ventana nunca se congele.
 from __future__ import annotations
 
 import shutil
+import tempfile
 from pathlib import Path
 
 from PySide6.QtCore import (
@@ -30,9 +31,9 @@ from ..profile import (
     export_bundle,
     output_dir,
     slug,
-    to_manifest as profile_to_manifest,
     validate as validate_profile,
 )
+from ..profile_apply import apply_profile
 from ..model import CATEGORIES, CATEGORY_LABELS, Manifest
 from ..preview import screenshot_tool
 from .. import community, screen_restore, store_client, widgets_install
@@ -285,10 +286,17 @@ class Backend(QObject):
             if entry is None:
                 raise RuntimeError("ese perfil ya no esta en la comunidad")
 
-            profile = community.fetch_profile(entry)
-            manifest = profile_to_manifest(profile)
-            actions = build_plan(manifest, None)
-            report = apply_plan(actions, None, safety=safety, engine_root=self.engine.root)
+            bundle = Path(tempfile.mkdtemp(prefix=f"themevault-{profile_id}-"))
+            try:
+                profile = community.fetch_profile_bundle(entry, bundle)
+                report = apply_profile(
+                    profile,
+                    bundle,
+                    engine_root=self.engine.root,
+                    safety=safety,
+                )
+            finally:
+                shutil.rmtree(bundle, ignore_errors=True)
 
             assets = scan_system_assets()
             missing = []
@@ -297,15 +305,24 @@ class Backend(QObject):
                 if name and name not in assets.get(kind, []):
                     missing.append(name)
 
+            total = (
+                len(profile.settings)
+                + (1 if profile.wallpaper else 0)
+                + len(profile.plugins)
+            )
             return {
                 "id": profile.id,
                 "name": profile.name,
-                "applied": report.applied,
-                "total": len(actions),
-                "blocked": len(report.blocked),
-                "failures": [[n, m] for n, m in report.failures],
+                "applied": report.get("applied", 0),
+                "total": total,
+                "blocked": 0,
+                "failures": report.get("failures", []),
                 "missing": missing,
-                "safety": report.safety_id or "",
+                "safety": report.get("safety", ""),
+                "wallpaper": report.get("wallpaper", {}),
+                "plugins": report.get("plugins", []),
+                "assets": report.get("assets", []),
+                "manual": report.get("manual", {}),
             }
 
         self._submit("community_apply", work)
@@ -335,6 +352,19 @@ class Backend(QObject):
             if taken and author.strip():
                 suggested = f"{profile.id[:44]}-{slug(author.strip())[:16]}".rstrip("-")[:63]
 
+            from ..profile_bundle import PLUGIN_PREFIXES, _video_from_items
+
+            plugin_count = sum(
+                1
+                for item in manifest.items
+                if any((item.source or "").startswith(prefix) for prefix, _kind in PLUGIN_PREFIXES)
+            )
+            has_wallpaper = bool(
+                (manifest.preview or {}).get("wallpaper")
+                or any(s.get("wallpaper") for s in (manifest.preview or {}).get("screens") or [])
+                or _video_from_items(manifest, store)
+            )
+
             return {
                 "id": profile.id,
                 "name": profile.name,
@@ -346,6 +376,11 @@ class Backend(QObject):
                 "requires": profile.requires,
                 "settings": profile.settings,
                 "settingsCount": len(profile.settings),
+                "hasWallpaper": has_wallpaper,
+                "wallpaperKind": "video" if _video_from_items(manifest, store) else "image",
+                "pluginCount": plugin_count,
+                "keybindCount": len(profile.keybinds),
+                "layoutCount": len((profile.layout or {}).get("containers") or []),
                 "dropped": dropped,
                 "problems": validate_profile(profile),
                 "cover": cover,
@@ -610,6 +645,8 @@ class Backend(QObject):
             ("i3-msg", "i3"),
             ("openbox", "Openbox"),
             ("cosmic-settings", "COSMIC"),
+            ("ffmpeg", "video wallpapers"),
+            ("ffprobe", "video wallpapers"),
             (screenshot_tool() or "-", "capturas de portada"),
         ]
         return [{"name": name, "purpose": purpose, "ok": bool(which(name))} for name, purpose in tools]

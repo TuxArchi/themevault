@@ -156,6 +156,8 @@ def cmd_detect(args: argparse.Namespace) -> int:
         ("i3-msg", "i3"),
         ("openbox", "openbox"),
         ("cosmic-settings", "COSMIC"),
+        ("ffmpeg", "video wallpapers"),
+        ("ffprobe", "video wallpapers"),
         (screenshot_tool() or "-", "capturas de portada"),
     ]
     for name, purpose in tools:

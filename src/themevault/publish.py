@@ -19,9 +19,22 @@ from .profile import Profile, safe_value, validate
 
 REPO_URL = "https://github.com/TuxArchi/themevault-profiles.git"
 
-ALLOWED_FILES = {"profile.json", "cover.png"}
-MAX_PROFILE = 64 * 1024
-MAX_COVER = 1536 * 1024
+ALLOWED_FILES = {
+    "profile.json",
+    "cover.png",
+    "cover.jpg",
+    "wallpaper.jpg",
+    "wallpaper.jpeg",
+    "wallpaper.png",
+    "wallpaper.webp",
+    "wallpaper.mp4",
+    "plugins",
+    "assets",
+}
+MAX_PROFILE = 256 * 1024
+MAX_COVER = 3 * 1024 * 1024
+MAX_WALLPAPER = 60 * 1024 * 1024
+MAX_PLUGIN = 25 * 1024 * 1024
 PNG = b"\x89PNG\r\n\x1a\n"
 
 
@@ -69,15 +82,50 @@ def load(folder: Path) -> tuple[Profile | None, list[str]]:
         problems.append("archivos no permitidos: " + ", ".join(sorted(extra)))
 
     if profile.cover:
-        if profile.cover != "cover.png":
-            problems.append("la portada debe llamarse cover.png")
+        if profile.cover not in ("cover.png", "cover.jpg"):
+            problems.append("la portada debe llamarse cover.png o cover.jpg")
         file = folder / profile.cover
         if not file.is_file():
-            problems.append("falta cover.png")
+            problems.append("falta la portada")
         elif file.stat().st_size > MAX_COVER:
-            problems.append("cover.png supera 1.5 MB")
-        elif file.read_bytes()[:8] != PNG:
+            problems.append("la portada supera 3 MB")
+        elif profile.cover == "cover.png" and file.read_bytes()[:8] != PNG:
             problems.append("cover.png no es un PNG válido")
+
+    wallpaper = profile.wallpaper or {}
+    for key in ("file", "fallback"):
+        name = str(wallpaper.get(key, "") or "")
+        if not name:
+            continue
+        file = folder / name
+        if ".." in Path(name).parts or Path(name).is_absolute():
+            problems.append(f"wallpaper: archivo inválido {name}")
+        elif not file.is_file():
+            problems.append(f"falta el archivo de wallpaper {name}")
+        elif file.stat().st_size > MAX_WALLPAPER:
+            problems.append("el wallpaper supera 60 MB")
+
+    for plugin in profile.plugins:
+        name = str(plugin.get("file", "") or "")
+        file = folder / name
+        if ".." in Path(name).parts or Path(name).is_absolute():
+            problems.append(f"plugin: archivo inválido {name}")
+        elif not file.is_file():
+            problems.append(f"falta el archivo del plugin {name}")
+        elif file.stat().st_size > MAX_PLUGIN:
+            problems.append("un plugin supera 25 MB")
+
+    for asset in profile.assets:
+        name = str(asset.get("file", "") or "")
+        if not name:
+            continue
+        file = folder / name
+        if ".." in Path(name).parts or Path(name).is_absolute():
+            problems.append(f"asset: archivo inválido {name}")
+        elif not file.is_file():
+            problems.append(f"falta el archivo del asset {name}")
+        elif file.stat().st_size > MAX_PLUGIN:
+            problems.append("un asset supera 25 MB")
 
     for setting in profile.settings:
         backend = str(setting.get("backend", ""))
@@ -165,6 +213,8 @@ def stage(repo: Path, folder: Path) -> Path:
         source = folder / name
         if source.is_file():
             shutil.copy2(source, target / name)
+        elif source.is_dir() and name in ("plugins", "assets"):
+            shutil.copytree(source, target / name)
     return target
 
 
