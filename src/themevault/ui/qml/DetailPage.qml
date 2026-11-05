@@ -565,6 +565,106 @@ Item {
                     }
                 }
 
+                // --------------------------------------------------- atajos
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 8
+                    spacing: 10
+                    visible: (page.info.keybinds || []).length > 0
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Text {
+                            text: "Atajos de teclado"
+                            color: Theme.text
+                            font.pixelSize: 18
+                            font.weight: Font.DemiBold
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        Text {
+                            text: (page.info.keybindCount || 0)
+                                  + ((page.info.keybindCount || 0) === 1 ? " atajo" : " atajos")
+                            color: Theme.textFaint
+                            font.pixelSize: 11
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: keybindCol.implicitHeight + 24
+                        radius: Theme.radius
+                        color: Theme.surface
+                        border.width: 1
+                        border.color: Theme.border
+
+                        ColumnLayout {
+                            id: keybindCol
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 5
+
+                            Repeater {
+                                model: page.info.keybinds || []
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 10
+
+                                    Rectangle {
+                                        width: comboText.implicitWidth + 18
+                                        height: 24
+                                        radius: 8
+                                        color: Theme.surfaceAlt
+                                        border.width: 1
+                                        border.color: Theme.border
+
+                                        Text {
+                                            id: comboText
+                                            anchors.centerIn: parent
+                                            text: modelData.combo || modelData.key || ""
+                                            color: Theme.accent
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                            textFormat: Text.PlainText
+                                        }
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: {
+                                            var action = ""
+                                            if (modelData.dispatcher)
+                                                action = modelData.dispatcher
+                                            if (modelData.arg)
+                                                action += " " + modelData.arg
+                                            if (modelData.submap)
+                                                action = "[" + modelData.submap + "] " + action
+                                            return action
+                                        }
+                                        color: Theme.text
+                                        font.pixelSize: 11
+                                        elide: Text.ElideRight
+                                        textFormat: Text.PlainText
+                                    }
+
+                                    Text {
+                                        visible: (modelData.description || "").length > 0
+                                        Layout.maximumWidth: 260
+                                        text: modelData.description || ""
+                                        color: Theme.textFaint
+                                        font.pixelSize: 10
+                                        elide: Text.ElideRight
+                                        textFormat: Text.PlainText
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // ----------------------------------------------------- muestra
                 ColumnLayout {
                     Layout.fillWidth: true

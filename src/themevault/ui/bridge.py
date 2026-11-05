@@ -516,7 +516,8 @@ class Backend(QObject):
             "distro": distro.get("pretty", "—"),
             "session": host.get("session", "—"),
             "sizeText": human_size(manifest.total_size),
-            "itemsText": f"{len(manifest.items)} elementos",
+            "itemsText": f"{len(manifest.items)} elementos"
+            + (f" · {len(manifest.keybinds)} atajos" if manifest.keybinds else ""),
             "hero": hero,
             "heroes": heroes,
             "screens": preview.get("screens") or [],
@@ -527,6 +528,8 @@ class Backend(QObject):
             "skipped": [{"path": s.get("path", ""), "reason": s.get("reason", "")} for s in skipped],
             "containers": containers,
             "widgetCount": sum(len(c.get("items", [])) for c in containers),
+            "keybinds": list(manifest.keybinds or []),
+            "keybindCount": len(manifest.keybinds or []),
             "themes": manifest.host.get("themes", {}) or preview.get("themes", {}) or {},
             "sampleCursor": sample_cursor,
             "sampleIcons": sample_icons,
@@ -598,6 +601,7 @@ class Backend(QObject):
             ("dconf", "GNOME / Cinnamon / MATE"),
             ("xfconf-query", "Xfce"),
             ("gsettings", "GNOME"),
+            ("hyprctl", "Hyprland"),
             (screenshot_tool() or "-", "capturas de portada"),
         ]
         return [{"name": name, "purpose": purpose, "ok": bool(which(name))} for name, purpose in tools]
@@ -666,6 +670,7 @@ class Backend(QObject):
             "title": manifest.label or pretty_date(manifest.created),
             "label": manifest.label or "",
             "items": len(manifest.items),
+            "keybinds": len(manifest.keybinds or []),
             "sizeText": human_size(manifest.total_size),
         }
 
@@ -707,6 +712,7 @@ class Backend(QObject):
             "deApplicable": sum(g["ok"] for g in categories),
             "categories": categories,
             "kde": manifest.de == "kde",
+            "keybindCount": len(manifest.keybinds or []),
             "screens": [
                 {
                     "index": s.get("index", 0),

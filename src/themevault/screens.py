@@ -7,6 +7,7 @@ imagen por monitor para que la galeria pueda ir pasando de una a otra.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -71,6 +72,46 @@ def _kscreen() -> list[Screen]:
     ]
 
 
+def _hyprctl() -> list[Screen]:
+    if which("hyprctl") is None:
+        return []
+    proc = run(["hyprctl", "monitors", "-j"], timeout=10)
+    if proc is None or proc.returncode != 0:
+        return []
+    try:
+        data = json.loads(proc.stdout.decode("utf-8", "replace"))
+    except (ValueError, UnicodeDecodeError):
+        return []
+    if not isinstance(data, list):
+        return []
+
+    screens: list[Screen] = []
+    for item in data:
+        if not isinstance(item, dict) or item.get("disabled"):
+            continue
+        try:
+            width = int(item.get("width") or 0)
+            height = int(item.get("height") or 0)
+            x = int(item.get("x") or 0)
+            y = int(item.get("y") or 0)
+            scale = float(item.get("scale") or 1.0)
+        except (TypeError, ValueError):
+            continue
+        if width <= 0 or height <= 0:
+            continue
+        screens.append(
+            Screen(
+                name=str(item.get("name") or "Monitor"),
+                x=x,
+                y=y,
+                width=width,
+                height=height,
+                scale=scale,
+            )
+        )
+    return screens
+
+
 def _xrandr() -> list[Screen]:
     if which("xrandr") is None:
         return []
@@ -98,7 +139,7 @@ def _xrandr() -> list[Screen]:
 
 def detect() -> list[Screen]:
     """Monitores activos. Lista vacia si no se pueden detectar."""
-    for probe in (_kscreen, _xrandr):
+    for probe in (_kscreen, _hyprctl, _xrandr):
         try:
             found = probe()
         except Exception:

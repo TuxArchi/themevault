@@ -80,6 +80,31 @@ XFCE_NAMES = {
     "xfce4-clipman-plugin": "Portapapeles",
 }
 
+WAYBAR_NAMES = {
+    "clock": "Reloj",
+    "battery": "Batería",
+    "cpu": "CPU",
+    "memory": "Memoria",
+    "temperature": "Temperatura",
+    "backlight": "Brillo",
+    "network": "Red",
+    "pulseaudio": "Audio",
+    "wireplumber": "Audio",
+    "tray": "Bandeja del sistema",
+    "idle_inhibitor": "Inhibir reposo",
+    "workspaces": "Áreas de trabajo",
+    "hyprland/workspaces": "Áreas de trabajo",
+    "hyprland/window": "Ventana",
+    "hyprland/language": "Idioma",
+    "hyprland/submap": "Submapa",
+    "sway/workspaces": "Áreas de trabajo",
+    "sway/window": "Ventana",
+    "wlr/taskbar": "Barra de tareas",
+    "mpd": "Reproductor",
+    "mpris": "Reproductor",
+    "custom/media": "Multimedia",
+}
+
 EXTENSION_PREFIXES = {
     "dash-to-dock": "Dash to Dock",
     "ubuntu-dock": "Ubuntu Dock",
@@ -584,6 +609,139 @@ def _extension_name(uuid: str) -> str:
     return _humanize(tail)
 
 
+# ---------------------------------------------------------------------- WAYBAR
+
+
+def _strip_jsonc(text: str) -> str:
+    """Quita comentarios y comas finales de un JSONC de Waybar."""
+    output: list[str] = []
+    index = 0
+    in_string = False
+    escaped = False
+    length = len(text)
+
+    while index < length:
+        char = text[index]
+        if in_string:
+            output.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            index += 1
+            continue
+
+        if char == '"':
+            in_string = True
+            output.append(char)
+            index += 1
+            continue
+        if char == "/" and index + 1 < length and text[index + 1] == "/":
+            while index < length and text[index] not in "\r\n":
+                index += 1
+            continue
+        if char == "/" and index + 1 < length and text[index + 1] == "*":
+            index += 2
+            while index + 1 < length and not (text[index] == "*" and text[index + 1] == "/"):
+                index += 1
+            index += 2
+            continue
+
+        output.append(char)
+        index += 1
+
+    return re.sub(r",\s*([}\]])", r"\1", "".join(output))
+
+
+def _waybar_name(module: str) -> str:
+    if module in WAYBAR_NAMES:
+        return WAYBAR_NAMES[module]
+    if module.startswith("custom/"):
+        return "Personalizado: " + _humanize(module.split("/", 1)[1])
+    if module.startswith("group/"):
+        return "Grupo: " + _humanize(module.split("/", 1)[1])
+    if module.startswith("hyprland/"):
+        return _humanize(module.split("/", 1)[1])
+    return _humanize(module)
+
+
+def parse_waybar(text: str) -> tuple[list[dict], list[dict]]:
+    """Devuelve (contenedores, widgets) de una configuración de Waybar."""
+    try:
+        data = json.loads(_strip_jsonc(text))
+    except (ValueError, TypeError):
+        return [], []
+    if isinstance(data, list):
+        data = next((item for item in data if isinstance(item, dict)), {})
+    if not isinstance(data, dict):
+        return [], []
+
+    positions = {
+        "top": "superior",
+        "bottom": "inferior",
+        "left": "izquierda",
+        "right": "derecha",
+    }
+    raw_position = str(data.get("position") or "top").lower()
+    location = positions.get(raw_position, "superior")
+    height = _as_int(data.get("height"))
+    width = _as_int(data.get("width"))
+    size = width if raw_position in ("left", "right") else height
+
+    modules: list[str] = []
+    for key in ("modules-left", "modules-center", "modules-right"):
+        values = data.get(key) or []
+        if isinstance(values, list):
+            for value in values:
+                module = str(value).strip()
+                if module and module not in modules:
+                    modules.append(module)
+
+    widgets: list[dict] = []
+    for position, module in enumerate(modules, start=1):
+        widgets.append(
+            {
+                "id": module,
+                "name": _waybar_name(module),
+                "kind": "waybar-module",
+                "container": "Waybar",
+                "position": position,
+                "installed": True,
+                "hidden": False,
+            }
+        )
+
+    settings: list[dict] = [{"label": "Posición", "value": location}]
+    if data.get("layer"):
+        settings.append({"label": "Capa", "value": str(data["layer"])})
+    if data.get("spacing") is not None:
+        settings.append({"label": "Separación", "value": f"{data['spacing']} px"})
+    if data.get("margin"):
+        settings.append({"label": "Margen", "value": str(data["margin"])})
+
+    containers = [
+        {
+            "id": "waybar",
+            "kind": "panel",
+            "name": "Waybar",
+            "location": location,
+            "screen": 0,
+            "size": size,
+            "floating": False,
+            "visibility": "siempre visible",
+            "alignment": "centro",
+            "length": "completo",
+            "order": modules,
+            "widgets": len(widgets),
+            "settings": settings,
+            "theme": "waybar",
+        }
+    ]
+    return containers, widgets
+
+
 # ------------------------------------------------------------------ agregador
 
 
@@ -599,7 +757,7 @@ def from_items(items: list[Item], store) -> dict:
         except (OSError, UnicodeDecodeError):
             return ""
 
-    appletsrc = plasmashellrc = xfce_panel = ""
+    appletsrc = plasmashellrc = xfce_panel = waybar_config = ""
     for item in items:
         if not item.blob:
             continue
@@ -615,11 +773,17 @@ def from_items(items: list[Item], store) -> dict:
             plasmashellrc = read(item)
         elif source.endswith(XFCE_PANEL_XML):
             xfce_panel = read(item)
+        elif source.endswith("/waybar/config") or source.endswith("/waybar/config.jsonc"):
+            waybar_config = read(item)
+        elif (item.meta or {}).get("waybar_config"):
+            waybar_config = read(item)
 
     if appletsrc:
         containers, widgets = parse_plasma(appletsrc, plasmashellrc)
     elif xfce_panel:
         containers, widgets = parse_xfce(xfce_panel)
+    elif waybar_config:
+        containers, widgets = parse_waybar(waybar_config)
     elif dumps:
         containers, widgets = parse_gnome(dumps)
 

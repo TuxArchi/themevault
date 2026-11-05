@@ -43,6 +43,8 @@ class Collector:
         self.store = store
         self.items: list[Item] = []
         self.skipped: list[tuple[str, str]] = []
+        self.meta: dict = {}
+        self._sources: set[str] = set()
 
     # ------------------------------------------------------------ primitivas
 
@@ -56,8 +58,13 @@ class Collector:
         src = expand(path)
         if not src.is_file():
             return None
+        portable = to_portable(src)
+        if portable in self._sources:
+            return None
         try:
-            size = src.stat().st_size
+            stat = src.stat()
+            size = stat.st_size
+            mode = stat.st_mode & 0o777
         except OSError:
             return None
         if size > MAX_FILE_BYTES:
@@ -72,14 +79,50 @@ class Collector:
             kind=KIND_FILE,
             category=category,
             name=name or src.name,
-            source=to_portable(src),
+            source=portable,
             blob=blob,
             sha256=sha,
             size=stored,
             requires=list(requires),
+            meta={"mode": mode},
         )
         self.items.append(item)
+        self._sources.add(portable)
         return item
+
+    def add_config_files(
+        self,
+        path: str | Path,
+        category: str,
+        *,
+        allowed_names: tuple[str, ...] = (),
+        allowed_suffixes: tuple[str, ...] = (),
+        tag: dict | None = None,
+    ) -> list[Item]:
+        """Agrega solo archivos de configuración seguros de un directorio.
+
+        La lista blanca vive en :mod:`themevault.privacy`. Los archivos
+        personales, multimedia o sensibles se informan en ``skipped`` y nunca
+        se copian.
+        """
+        from ..privacy import iter_config_files
+
+        added: list[Item] = []
+        for candidate, reason in iter_config_files(
+            path,
+            allowed_names=frozenset(allowed_names),
+            allowed_suffixes=frozenset(allowed_suffixes),
+        ):
+            if reason:
+                self.skipped.append((str(candidate), reason))
+                continue
+            item = self.add_file(candidate, category)
+            if item is None:
+                continue
+            if tag:
+                item.meta.update(tag)
+            added.append(item)
+        return added
 
     def add_tree(
         self,

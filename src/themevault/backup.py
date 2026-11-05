@@ -12,9 +12,17 @@ from .adapters import Adapter, Collector, detected_adapters
 from .detect import detect_host
 from .model import Manifest
 from . import plasma_layout
+from .hypr import keybinds_from_items
 from .preview import build_preview
 from .store import BlobStore
-from .util import default_root, home, human_size, is_within, xdg_data_home
+from .util import (
+    default_root,
+    home,
+    human_size,
+    is_within,
+    to_portable,
+    xdg_data_home,
+)
 from .widgets import enrich_containers
 from .widgets import from_items as widgets_from_items
 
@@ -76,11 +84,18 @@ class BackupEngine:
             for adapter in chosen:
                 adapter.collect(collector)
 
-            host["skipped"] = [{"path": path, "reason": reason} for path, reason in collector.skipped]
+            host["skipped"] = [
+                {"path": to_portable(path), "reason": reason}
+                for path, reason in collector.skipped
+            ]
             host["themes"] = _merge_themes(chosen)
 
             layout = widgets_from_items(collector.items, store)
             layout["containers"] = enrich_containers(layout["containers"])
+
+            keybinds = collector.meta.get("keybinds")
+            if keybinds is None:
+                keybinds = keybinds_from_items(collector.items, store)
 
             manifest = Manifest(
                 id=backup_id,
@@ -89,6 +104,7 @@ class BackupEngine:
                 items=collector.items,
                 containers=layout["containers"],
                 widgets=layout["widgets"],
+                keybinds=keybinds,
                 label=label,
                 notes=notes,
             )

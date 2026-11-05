@@ -18,15 +18,15 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.4.1**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
-> integración headless. Hay soporte para GNOME y Xfce, con menos horas de
-> prueba real: los reportes son bienvenidos.
+> Estado: **v0.5.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> integración headless. Hay soporte para GNOME, Xfce y Hyprland, con menos
+> horas de prueba real: los reportes son bienvenidos.
 
 ---
 
 ## Por qué no alcanza con copiar `~/.config`
 
-La personalización vive en seis lugares distintos y cada DE la guarda a su
+La personalización vive en varios lugares distintos y cada DE la guarda a su
 manera:
 
 | Qué | Dónde vive | Cómo se restaura |
@@ -36,11 +36,18 @@ manera:
 | GNOME / Cinnamon / MATE | **dconf** (binario), incluye extensiones y dock | `dconf load` |
 | Xfce | **xfconf** (XML por canal + demonio) | `xfconf-query -p … -s` |
 | KDE Plasma | INI en `~/.config` + árboles en `~/.local/share` | copiar archivos |
+| Hyprland | `~/.config/hypr` + ecosistema (Waybar, lanzadores, notificaciones) | copiar solo configuración |
 | WMs / dotfiles | `~/.config/<wm>/` | copiar archivos |
 
 Un backup que solo copia archivos deja los temas *instalados pero no
 aplicados*. ThemeVault guarda ambas cosas: los **archivos** y los **ajustes
 lógicos**.
+
+En Hyprland el respaldo es **solo de configuración**: una lista blanca de
+archivos de texto. No se copian fotos, wallpapers, documentos, notas, scripts,
+claves ni historiales como elementos restaurables. Los atajos de teclado sí se
+guardan e interpretan, y aparecen en el detalle de la copia. La portada con
+fondo es opcional; con `--no-preview` no se guarda ninguna imagen.
 
 ---
 
@@ -124,6 +131,10 @@ Flujos:
 - **GNOME**: la barra superior aparece como panel (con sus extensiones) y el
   dock con sus ajustes — posición, tamaño de iconos, auto-ocultar y si está
   fijo. Al no ser una barra sólida no se recorta una tira del dock.
+- **Hyprland**: se respaldan `hyprland.conf` y sus `source` dentro del home,
+  junto con Waybar, lanzadores, notificaciones, terminales y estilos Qt/GTK.
+  Los **atajos de teclado personalizados** se muestran con su combinación,
+  dispatcher y comentario. Waybar aparece como barra con sus módulos.
 - **Restaurar**: abre el plan, muestra qué se puede aplicar, qué queda
   bloqueado y qué temas faltan en este sistema. Se elige por categoría y hay
   un switch para crear el punto de retorno previo.
@@ -173,7 +184,8 @@ Detalles de implementación de la UI:
 ```bash
 themevault detect                    # distro, DE, herramientas y activos
 themevault backup -m "catppuccin"    # crear copia (con captura y paleta)
-themevault backup --no-preview       # copia rápida, sin captura
+themevault backup --no-preview       # solo configuración, sin captura ni fondo
+themevault backup -a hyprland        # forzar el adaptador de Hyprland
 themevault list                      # galería en texto, con muestras de color
 themevault show 20261101-100217-kde  # detalle por categoría
 themevault restore <id> --dry-run    # ver el plan sin tocar nada
@@ -238,6 +250,11 @@ Cada copia es un directorio autocontenido (se puede mover a un pendrive):
     { "id": "org.kde.plasma.digitalclock", "name": "Reloj digital",
       "kind": "plasmoid", "container": "Panel inferior",
       "position": 6, "installed": true }
+  ],
+  "keybinds": [
+    { "combo": "SUPER + Q", "dispatcher": "killactive",
+      "description": "cerrar ventana", "source": "~/.config/hypr/hyprland.conf",
+      "line": 42, "restorable": true }
   ],
   "items": [
     { "kind": "tree", "category": "theme", "name": "MiTema",
@@ -311,11 +328,14 @@ src/themevault/
 ├── preview.py       captura, wallpaper, paleta
 ├── cover.py         portada compuesta (cursor + iconos + paleta)
 ├── widgets.py       paneles, widgets y geometría por DE
+├── hypr.py          parser de Hyprland y atajos de teclado
+├── privacy.py       lista blanca de configuración segura
 ├── backup.py        motor de respaldo
 ├── restore.py       plan, aplicación, rollback
 ├── adapters/
 │   ├── base.py      Collector + contrato de adaptador
 │   ├── gnome.py     dconf
+│   ├── hyprland.py  configuración y ecosistema de Hyprland
 │   ├── kde.py       INI + árboles
 │   └── xfce.py      xfconf
 └── ui/
@@ -444,7 +464,7 @@ distribución y mandar un pull request.
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| 1 | Core + CLI, adaptadores GNOME/KDE/XFCE, previews, restore seguro | **hecho** |
+| 1 | Core + CLI, adaptadores GNOME/KDE/XFCE/Hyprland, previews, restore seguro | **hecho** |
 | 2 | GUI Qt6/QML: galería, detalle, restore selectivo | **hecho** |
 | 3 | Resolver de paquetes (apt/dnf/pacman/zypper), restore cruzado entre DEs | pendiente |
 | 3.5 | Widgets, paneles y geometría + portada compuesta | **hecho** |
@@ -458,12 +478,22 @@ distribución y mandar un pull request.
 - Restaurar entre versiones mayores del mismo DE (Plasma 5 → 6, GNOME 45 → 48)
   puede necesitar migración de esquemas: se avisa, no se promete.
 - Xfce: las propiedades de tipo *array* se omiten (se informan como omitidas).
+- Hyprland: solo se respalda configuración. Los archivos incluidos con
+  `source` fuera de `$HOME`, sin extensión reconocida o dentro de carpetas
+  personales no se copian; los scripts referenciados por atajos se listan como
+  dependencia, pero no se incluyen. Al restaurar, ejecutá `hyprctl reload` o
+  reiniciá la sesión.
+- Hyprland: la captura usa un workspace especial temporal para ocultar
+  ventanas. Si `hyprctl` no responde, se captura la pantalla tal cual.
+- Waybar con una configuración distinta por salida se interpreta como una sola
+  barra en el detalle; los archivos se respaldan igual.
 - Los temas de `/usr/share` deben existir en la máquina destino; si no, se verá
   el tema de fallback (por eso existe el aviso previo).
 - En Wayland, la captura de pantalla depende del compositor: si falla, la
   portada muestra el wallpaper (y no hay tiras de barras).
-- Los docks de terceros (Plank, Latte, Waybar) no tienen parser propio: no
-  generan tira. El de GNOME se muestra como ajustes, no como imagen.
+- Los docks de terceros (Plank, Latte) no tienen parser propio: no generan
+  tira. Waybar sí se interpreta como barra; el dock de GNOME se muestra como
+  ajustes, no como imagen.
 - En GNOME el alto de la barra superior es fijo y se asume 40 px para el
   recorte; con escalados raros la franja puede quedar algo alta.
 - Flatpak como formato de distribución está descartado: el sandbox bloquea justo

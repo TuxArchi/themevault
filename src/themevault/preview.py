@@ -87,6 +87,14 @@ def _show_desktop() -> str:
         if proc is not None and proc.returncode == 0:
             return "kde"
 
+    if which("hyprctl") is not None:
+        proc = run(
+            ["hyprctl", "dispatch", "togglespecialworkspace", "themevault-capture"],
+            timeout=10,
+        )
+        if proc is not None and proc.returncode == 0:
+            return "hyprland"
+
     if which("wmctrl") is not None and detect_session() == "x11":
         proc = run(["wmctrl", "-k", "on"], timeout=10)
         if proc is not None and proc.returncode == 0:
@@ -108,6 +116,11 @@ def _restore_windows(mechanism: str) -> None:
                 ],
                 timeout=10,
             )
+    elif mechanism == "hyprland":
+        run(
+            ["hyprctl", "dispatch", "togglespecialworkspace", "themevault-capture"],
+            timeout=10,
+        )
     elif mechanism == "wmctrl":
         run(["wmctrl", "-k", "off"], timeout=10)
 
@@ -363,16 +376,19 @@ def build_preview(
         if panels:
             info["panels"] = panels
 
-    candidates: list[Path] = []
-    for adapter in adapters:
-        try:
-            candidates.extend(adapter.preview_sources())
-        except Exception:  # un DE raro nunca debe romper el backup
-            continue
+    # Sin portada no se copia ninguna imagen personal (ni captura ni fondo).
+    wallpaper = None
+    if enabled:
+        candidates: list[Path] = []
+        for adapter in adapters:
+            try:
+                candidates.extend(adapter.preview_sources())
+            except Exception:  # un DE raro nunca debe romper el backup
+                continue
 
-    wallpaper = pick_wallpaper(candidates, preview_dir)
-    if wallpaper is not None:
-        info["wallpaper"] = f"preview/{wallpaper.name}"
+        wallpaper = pick_wallpaper(candidates, preview_dir)
+        if wallpaper is not None:
+            info["wallpaper"] = f"preview/{wallpaper.name}"
 
     source = wallpaper or (shot if captured else None)
     info["palette"] = build_palette(source)

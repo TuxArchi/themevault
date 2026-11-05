@@ -3,6 +3,32 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.5.0] - 2026-11-04
+
+### Agregado
+
+- **Soporte de Hyprland**: adaptador propio para `hyprland.conf` y sus
+  `source` dentro del home, con lista blanca de archivos de configuración.
+- **Atajos de teclado**: se interpretan variables, `bind*`, `unbind` y
+  `submap`; se guardan en el manifest y se muestran en el detalle y la CLI.
+- **Waybar**: se interpreta como barra/panel con sus módulos y se recorta su
+  franja en la portada.
+- **Ecosistema Hyprland**: Waybar, wofi/rofi, swaync/mako/dunst, terminales,
+  qt5ct/qt6ct, Kvantum y esquemas de color.
+- **Privacidad**: las copias de Hyprland no incluyen fotos, wallpapers,
+  documentos, notas, scripts, claves ni historiales. Los includes externos se
+  informan como omitidos.
+- `--no-preview` ahora no guarda ninguna imagen: ni captura ni fondo.
+- Captura de Hyprland en un workspace especial temporal para no fotografiar
+  ventanas abiertas.
+- Detección de monitores con `hyprctl monitors -j`.
+
+### Cambiado
+
+- Los archivos sueltos restaurados conservan su modo original.
+- `Manifest` incluye `keybinds` de forma opcional y compatible con copias
+  anteriores.
+
 ## [0.4.1] - 2026-11-01
 
 ### Cambiado
@@ -255,6 +281,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.5.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.5.0
 [0.4.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.4.1
 [0.4.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.4.0
 [0.3.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.3.0
