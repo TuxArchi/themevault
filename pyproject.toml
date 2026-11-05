@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "themevault"
-version = "0.8.0"
+version = "0.9.0"
 description = "Respaldo y restauracion de la personalizacion del escritorio Linux (KDE, GNOME, Xfce, Cinnamon, MATE, Budgie, LXQt, COSMIC, Hyprland, niri, Sway, River, Wayfire, labwc)"
 readme = "README.md"
 requires-python = ">=3.10"

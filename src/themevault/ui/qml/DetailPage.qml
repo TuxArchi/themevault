@@ -14,6 +14,7 @@ Item {
     signal back()
     signal restoreRequested()
     signal shareRequested(string notes, string name)
+    signal notify(string message, bool error)
 
     function load() {
         var detail = backend.detail(backupId || "")
@@ -77,6 +78,13 @@ Item {
                 variant: "ghost"
                 small: true
                 onClicked: page.shareRequested(page.info.notes || "", page.info.label || "")
+            }
+
+            AppButton {
+                text: "Auditar"
+                variant: "ghost"
+                small: true
+                onClicked: auditDialog.openFor(page.backupId)
             }
 
             AppButton {
@@ -923,6 +931,14 @@ Item {
     Shortcut {
         sequence: "Esc"
         onActivated: page.back()
+    }
+
+    AuditDialog {
+        id: auditDialog
+
+        onNotify: function(message, error) {
+            page.notify(message, error)
+        }
     }
 
     Popup {

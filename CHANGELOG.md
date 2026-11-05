@@ -3,6 +3,39 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.9.0] - 2026-11-05
+
+### Agregado
+
+- **Auditoría de copias**: `themevault audit <id>` y el botón **Auditar** en el
+  detalle detectan capturas, fondos, rutas absolutas, historial de dconf,
+  tokens, shells, configuraciones de applets y atajos con comandos.
+- **Exportación saneada**: `themevault export-sanitized <id>` crea una copia
+  limpia para compartir, sin tocar la original: elimina imágenes, shells,
+  historial, configuraciones privadas de applets y atajos inseguros.
+- **Ventanas de transparencia**:
+  - en **Compartir** se ve qué se comparte y qué se omite, con switches para
+    fondo, plugins/assets, atajos y layout;
+  - en **Comunidad** una confirmación previa muestra qué se descargará,
+    instalará y aplicará, y pide consentimiento para código de terceros.
+- **Limpieza de caché**: `themevault cache clean` borra el índice de la
+  comunidad y los clones temporales.
+- La portada del perfil se genera desde el fondo; nunca desde una captura del
+  escritorio.
+
+### Cambiado
+
+- La copia local sigue siendo **completa** (decisión explícita): puede contener
+  datos personales. La app ahora lo audita y ofrece una copia saneada antes de
+  compartir.
+- Los atajos seguros se incluyen en el perfil; los que tienen rutas, URLs,
+  secretos o scripts se descartan.
+
+### Limitado
+
+- La aplicación automática de atajos y layout por entorno sigue siendo manual.
+- Sin `mpvpaper`, los videos usan el frame estático.
+
 ## [0.8.0] - 2026-11-05
 
 ### Agregado
@@ -348,6 +381,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.9.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.9.0
 [0.8.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.8.0
 [0.7.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.7.0
 [0.6.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.6.0

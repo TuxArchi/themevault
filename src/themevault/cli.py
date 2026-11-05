@@ -340,6 +340,80 @@ def cmd_restore(args: argparse.Namespace) -> int:
     return 0 if report.ok else 1
 
 
+def cmd_audit(args: argparse.Namespace) -> int:
+    from .audit import audit_backup
+
+    engine = BackupEngine(args.root)
+    manifest = engine.resolve(args.id)
+    store = engine.store(manifest.id)
+    report = audit_backup(manifest, store)
+
+    color = green if report["risk"] == "low" else (yellow if report["risk"] == "medium" else red)
+    print(f"{bold('Auditoria')} {manifest.id}")
+    print(f"  Riesgo: {color(report['risk'])}  ·  compartible: {'si' if report['safe_to_share'] else 'no'}")
+    if not report["findings"]:
+        print(dim("  No se encontraron datos personales evidentes."))
+        return 0
+    for finding in report["findings"]:
+        print(f"  {yellow('[!]')} {finding['label']}: {finding['count']}")
+        for example in finding["examples"]:
+            print(dim(f"      · {example}"))
+    print(dim("\nPara compartir, usá `themevault export-sanitized <id>`."))
+    return 0
+
+
+def cmd_export_sanitized(args: argparse.Namespace) -> int:
+    from .sanitize import sanitized_copy
+
+    engine = BackupEngine(args.root)
+    manifest = engine.resolve(args.id)
+    store = engine.store(manifest.id)
+    base = Path(args.out).expanduser() if args.out else Path.home() / "themevault-saneadas"
+    destination = base / f"{manifest.id}-saneada"
+    new_manifest, report = sanitized_copy(
+        manifest,
+        store,
+        destination,
+        include_wallpaper=args.wallpaper,
+        include_plugins=args.plugins,
+    )
+    print(green("Copia saneada creada") + f"  {destination}")
+    print(
+        f"  {len(new_manifest.items)} items · "
+        f"{len(new_manifest.keybinds)} atajos seguros · "
+        f"{len(report['removed'])} omitidos · "
+        f"{len(report['sanitized'])} saneados"
+    )
+    if report["removed"]:
+        print(dim("  Omitidos: " + ", ".join(report["removed"][:5])))
+    return 0
+
+
+def cmd_cache(args: argparse.Namespace) -> int:
+    from .community import cache_file
+
+    paths = [cache_file()]
+    try:
+        from .publish import default_repo
+
+        paths.append(default_repo())
+    except Exception:
+        pass
+
+    removed = 0
+    for path in paths:
+        if path.is_file():
+            path.unlink(missing_ok=True)
+            removed += 1
+        elif path.is_dir():
+            import shutil
+
+            shutil.rmtree(path, ignore_errors=True)
+            removed += 1
+    print(green("Caché limpiada") + f"  ({removed} elemento(s))")
+    return 0
+
+
 def cmd_delete(args: argparse.Namespace) -> int:
     engine = BackupEngine(args.root)
     manifest = engine.resolve(args.id)
@@ -681,6 +755,37 @@ def build_parser() -> argparse.ArgumentParser:
     restore.add_argument("--no-safety", action="store_true", help="no crear punto de restauracion previo")
     restore.add_argument("-y", "--yes", action="store_true", help="no pedir confirmacion")
     restore.set_defaults(func=cmd_restore)
+
+    audit = sub.add_parser(
+        "audit",
+        parents=[common],
+        help="audita datos personales dentro de una copia",
+    )
+    audit.add_argument("id")
+    audit.set_defaults(func=cmd_audit)
+
+    sanitized = sub.add_parser(
+        "export-sanitized",
+        parents=[common],
+        help="genera una copia limpia para compartir",
+    )
+    sanitized.add_argument("id")
+    sanitized.add_argument("--out", help="carpeta de salida")
+    sanitized.add_argument(
+        "--wallpaper",
+        action="store_true",
+        help="incluir el wallpaper de la copia saneada",
+    )
+    sanitized.add_argument(
+        "--plugins",
+        action="store_true",
+        help="incluir plugins y assets (código de terceros) en la copia saneada",
+    )
+    sanitized.set_defaults(func=cmd_export_sanitized)
+
+    cache = sub.add_parser("cache", parents=[common], help="gestiona la caché de la comunidad")
+    cache.add_argument("cache_action", choices=["clean"], help="clean borra índice y clones temporales")
+    cache.set_defaults(func=cmd_cache)
 
     delete = sub.add_parser("delete", parents=[common], help="borra una copia")
     delete.add_argument("id")

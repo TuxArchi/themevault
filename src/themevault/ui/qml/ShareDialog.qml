@@ -16,6 +16,10 @@ Popup {
     property var preview: ({})
     property string license: "CC-BY-SA-4.0"
     property bool includeCover: false
+    property bool includeWallpaper: true
+    property bool includePlugins: true
+    property bool includeKeybinds: true
+    property bool includeLayout: true
     property bool exporting: false
     property string errorText: ""
     property string exportedTo: ""
@@ -23,6 +27,12 @@ Popup {
     signal notify(string message, bool error)
 
     readonly property var licenses: ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0", "MIT", "GPL-3.0-or-later"]
+    readonly property var shareOptions: [
+        { prop: "includeWallpaper", title: "Incluir fondo", hint: "Imagen o video, sin audio ni metadatos." },
+        { prop: "includePlugins", title: "Incluir plugins y assets", hint: "Código de terceros con hash y confirmación." },
+        { prop: "includeKeybinds", title: "Incluir atajos seguros", hint: "Solo combinaciones sin rutas, URLs ni secretos." },
+        { prop: "includeLayout", title: "Incluir layout", hint: "Paneles, posiciones y widgets aplicados." }
+    ]
     readonly property bool authorMismatch: backend.githubUser.length > 0
                                            && authorInput.text.length > 0
                                            && authorInput.text.trim().toLowerCase() !== backend.githubUser.toLowerCase()
@@ -32,6 +42,10 @@ Popup {
         preview = ({})
         license = "CC-BY-SA-4.0"
         includeCover = false
+        includeWallpaper = true
+        includePlugins = true
+        includeKeybinds = true
+        includeLayout = true
         exporting = false
         errorText = ""
         exportedTo = ""
@@ -47,7 +61,9 @@ Popup {
 
     function refresh() {
         backend.profilePreview(backupId, nameInput.text, authorInput.text,
-                               license, descInput.text, includeCover)
+                               license, descInput.text, includeCover,
+                               includeWallpaper, includePlugins,
+                               includeKeybinds, includeLayout)
     }
 
     function canExport() {
@@ -63,7 +79,9 @@ Popup {
         exporting = true
         errorText = ""
         backend.profileExport(backupId, nameInput.text, authorInput.text,
-                              license, descInput.text, includeCover, destination.text)
+                              license, descInput.text, includeCover,
+                              includeWallpaper, includePlugins,
+                              includeKeybinds, includeLayout, destination.text)
     }
 
     function requirementChips(requires) {
@@ -351,42 +369,93 @@ Popup {
                         }
                     }
 
-                    Rectangle {
+                    ColumnLayout {
                         Layout.fillWidth: true
                         Layout.leftMargin: 26
                         Layout.rightMargin: 26
-                        implicitHeight: 62
-                        radius: Theme.radiusSmall
-                        color: Theme.surfaceAlt
+                        spacing: 6
 
-                        Column {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 14
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
+                        Repeater {
+                            model: dlg.shareOptions
 
-                            Text {
-                                text: "Incluir portada"
-                                color: Theme.text
-                                font.pixelSize: 12
-                            }
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: 52
+                                radius: Theme.radiusSmall
+                                color: Theme.surfaceAlt
 
-                            Text {
-                                text: "La portada se genera desde el fondo, no desde una captura de tus ventanas."
-                                color: Theme.textFaint
-                                font.pixelSize: 10
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 14
+                                    anchors.rightMargin: 14
+                                    spacing: 12
+
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 1
+
+                                        Text {
+                                            text: modelData.title
+                                            color: Theme.text
+                                            font.pixelSize: 12
+                                        }
+
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: modelData.hint
+                                            color: Theme.textFaint
+                                            font.pixelSize: 10
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+
+                                    AppSwitch {
+                                        checked: dlg[modelData.prop] === true
+                                        onToggled: function(value) {
+                                            dlg[modelData.prop] = value
+                                            dlg.refresh()
+                                        }
+                                    }
+                                }
                             }
                         }
 
-                        AppSwitch {
-                            id: coverSwitch
-                            anchors.right: parent.right
-                            anchors.rightMargin: 14
-                            anchors.verticalCenter: parent.verticalCenter
-                            checked: dlg.includeCover
-                            onToggled: function(value) {
-                                dlg.includeCover = value
-                                dlg.refresh()
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 62
+                            radius: Theme.radiusSmall
+                            color: Theme.surfaceAlt
+
+                            Column {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 14
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 2
+
+                                Text {
+                                    text: "Incluir portada"
+                                    color: Theme.text
+                                    font.pixelSize: 12
+                                }
+
+                                Text {
+                                    text: "La portada se genera desde el fondo, no desde una captura de tus ventanas."
+                                    color: Theme.textFaint
+                                    font.pixelSize: 10
+                                }
+                            }
+
+                            AppSwitch {
+                                id: coverSwitch
+                                anchors.right: parent.right
+                                anchors.rightMargin: 14
+                                anchors.verticalCenter: parent.verticalCenter
+                                enabled: dlg.includeWallpaper
+                                checked: dlg.includeCover && dlg.includeWallpaper
+                                onToggled: function(value) {
+                                    dlg.includeCover = value
+                                    dlg.refresh()
+                                }
                             }
                         }
                     }
@@ -520,10 +589,61 @@ Popup {
                             Column {
                                 Layout.fillWidth: true
                                 spacing: 3
-                                visible: (dlg.preview.settings || []).length > 0
 
                                 Text {
                                     text: "SE COMPARTE"
+                                    color: Theme.textFaint
+                                    font.pixelSize: 9
+                                    font.weight: Font.DemiBold
+                                    font.letterSpacing: 0.8
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: "· Fondo: " + (dlg.preview.hasWallpaper ? dlg.preview.wallpaperKind : "no incluido")
+                                    color: Theme.textDim
+                                    font.pixelSize: 10
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: "· Plugins: " + (dlg.preview.pluginCount || 0)
+                                          + "  ·  Assets: " + (dlg.preview.assetCount || 0)
+                                          + "  ·  Atajos seguros: " + (dlg.preview.keybindCount || 0)
+                                          + "  ·  Paneles: " + (dlg.preview.layoutCount || 0)
+                                    color: Theme.textDim
+                                    font.pixelSize: 10
+                                }
+                            }
+
+                            Column {
+                                Layout.fillWidth: true
+                                spacing: 3
+
+                                Text {
+                                    text: "NO SE COMPARTE"
+                                    color: Theme.textFaint
+                                    font.pixelSize: 9
+                                    font.weight: Font.DemiBold
+                                    font.letterSpacing: 0.8
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: "· Captura del escritorio, historial, shells, configuración privada de widgets y atajos con rutas o secretos."
+                                    color: Theme.textFaint
+                                    font.pixelSize: 10
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+
+                            Column {
+                                Layout.fillWidth: true
+                                spacing: 3
+                                visible: (dlg.preview.settings || []).length > 0
+
+                                Text {
+                                    text: "AJUSTES"
                                     color: Theme.textFaint
                                     font.pixelSize: 9
                                     font.weight: Font.DemiBold
@@ -683,6 +803,7 @@ Popup {
                             text: "profile.json"
                                   + (dlg.preview.hasWallpaper ? " + fondo" : "")
                                   + (dlg.preview.pluginCount > 0 ? " + plugins" : "")
+                                  + (dlg.preview.assetCount > 0 ? " + assets" : "")
                                   + (dlg.preview.hasCover ? " + portada" : "")
                             color: Theme.text
                             font.pixelSize: 13

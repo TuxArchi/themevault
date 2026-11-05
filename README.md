@@ -18,7 +18,7 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.8.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> Estado: **v0.9.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
 > integración headless. Hay soporte para GNOME, Xfce, Cinnamon, MATE, Budgie,
 > LXQt, COSMIC, Hyprland, niri, Sway, River, Wayfire y labwc, con menos horas
 > de prueba real en algunos entornos: los reportes son bienvenidos.
@@ -58,6 +58,13 @@ blanca de archivos de texto. No se copian fotos, wallpapers, documentos, notas,
 scripts, claves ni historiales como elementos restaurables. Los atajos de
 teclado sí se guardan e interpretan, y aparecen en el detalle de la copia. La
 portada con fondo es opcional; con `--no-preview` no se guarda ninguna imagen.
+
+La copia local es **completa** y puede incluir datos personales: captura del
+escritorio, rutas `/home/...`, historial de dconf y comandos de atajos. Antes
+de compartir una carpeta cruda, usá **Auditar** o `themevault audit`; para
+generar una versión limpia, `themevault export-sanitized`. El perfil de
+comunidad y la copia saneada son listas blancas; la copia original no se
+modifica.
 
 Las shells de Wayland se comparten entre compositores: Waybar, Noctalia,
 DankMaterialShell, Quickshell, AGS, fuzzel, wofi/rofi, notificaciones,
@@ -127,7 +134,12 @@ Una sola ventana, tres vistas:
   aplica con el mismo motor de restauración que una copia.
 - **Compartir**: desde el detalle de una copia, genera un bundle publicable con
   fondo (imagen o video), apariencia, layout, atajos seguros y plugins de
-  terceros, con vista previa de lo que se comparte.
+  terceros, con vista previa de lo que se comparte y switches para elegir qué
+  incluir.
+- **Auditar**: revisa la copia local y muestra qué datos personales contiene
+  (capturas, rutas, historial, shells, atajos) antes de compartirla.
+- **Copia saneada**: genera una copia limpia para compartir sin modificar la
+  original.
 - **Video wallpapers**: se comprimen con ffmpeg, se les quita audio/metadatos y
   se aplican con `mpvpaper` en Wayland; si no se puede, se usa un frame fijo.
 
@@ -224,6 +236,9 @@ themevault install-widgets <id>      # instalar los widgets que trae la copia
 themevault widgets search "clima"    # buscar en la tienda
 themevault widgets install 2380036   # instalar un widget de la tienda
 themevault export-profile <id> --author tu-usuario --name "Mi estilo"   # perfil compartible
+themevault audit <id>                # ver qué datos personales tiene una copia
+themevault export-sanitized <id>     # copia limpia para compartir (no toca la original)
+themevault cache clean               # borrar caché de la comunidad
 themevault verify <id>               # verificar hashes
 themevault delete <id> -y            # borrar
 themevault ui --backup <id>          # abrir la GUI en el detalle
@@ -375,6 +390,8 @@ src/themevault/
 ├── profile_apply.py aplicación de bundles
 ├── wallpaper_apply.py fondos por compositor
 ├── video.py         ffmpeg: video wallpapers
+├── audit.py         auditoría de datos personales en copias
+├── sanitize.py      copia saneada para compartir
 ├── adapters/
 │   ├── base.py      Collector + contrato de adaptador
 │   ├── gnome.py     dconf
@@ -442,6 +459,8 @@ Y registrarlo en `adapters/__init__.py`. No hay que tocar el core ni la GUI.
 - `tests/test_desktops.py`: Cinnamon, MATE, Budgie, LXQt, i3, Openbox y COSMIC.
 - `tests/test_profile_bundle.py`: wallpaper, video con ffmpeg, plugins embebidos,
   atajos seguros y aplicación de perfiles.
+- `tests/test_audit.py`: auditoría de capturas, rutas, historial, shells y
+  atajos; exportación saneada sin tocar la copia original.
 
 ---
 

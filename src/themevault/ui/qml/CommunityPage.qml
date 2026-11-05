@@ -63,12 +63,12 @@ Item {
         }
 
         function onCommunityApplied(r) {
-            page.detail.close()
+            detail.close()
             var failed = (r.failures || []).length
             if (failed > 0)
                 page.notify(r.failures[0][1] || "no se pudo aplicar el perfil", true)
             else
-                page.notify("Perfil aplicado · " + r.applied + (r.applied === 1 ? " ajuste" : " ajustes"), false)
+                page.notify("Perfil aplicado · " + r.applied + (r.applied === 1 ? " cambio" : " cambios"), false)
             if ((r.missing || []).length > 0)
                 page.notify("Falta instalar: " + r.missing.join(", "), true)
         }
@@ -522,7 +522,20 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     Layout.topMargin: 10
-                    text: "Los temas e iconos se instalan aparte (Sistema → Tienda de widgets). Aplicar crea un punto de retorno."
+                    text: "Incluye: "
+                          + (detail.item.wallpaper && (detail.item.wallpaper.kind || detail.item.wallpaper.file) ? "fondo, " : "")
+                          + (detail.item.plugins || 0) + " plugins, "
+                          + (detail.item.assets || 0) + " assets, "
+                          + (detail.item.keybinds || 0) + " atajos seguros."
+                    color: Theme.textDim
+                    font.pixelSize: 10
+                    wrapMode: Text.WordWrap
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 4
+                    text: "Los plugins son código de terceros: se instalan con hash y confirmación. Aplicar crea un punto de retorno."
                     color: Theme.textFaint
                     font.pixelSize: 10
                     wrapMode: Text.WordWrap
@@ -550,7 +563,211 @@ Item {
                     text: backend.busy ? "Aplicando…" : "Aplicar perfil"
                     variant: "primary"
                     enabled: !backend.busy
-                    onClicked: backend.communityApply(detail.item.id, true)
+                    onClicked: applyDialog.openFor(detail.item)
+                }
+            }
+        }
+    }
+
+    Popup {
+        id: applyDialog
+
+        property var item: ({})
+        property bool confirmed: false
+
+        readonly property int plugins: item.plugins || 0
+        readonly property int assets: item.assets || 0
+        readonly property bool needsConsent: plugins > 0 || assets > 0
+        readonly property bool hasWallpaper: !!(item.wallpaper && (item.wallpaper.kind || item.wallpaper.file))
+
+        function openFor(data) {
+            item = data
+            confirmed = false
+            open()
+        }
+
+        modal: true
+        focus: true
+        padding: 0
+        width: 560
+        anchors.centerIn: parent
+        closePolicy: Popup.CloseOnEscape
+
+        Overlay.modal: Rectangle { color: "#9905050a" }
+
+        background: Rectangle {
+            color: Theme.surface
+            radius: 18
+            border.width: 1
+            border.color: Theme.border
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 0
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.topMargin: 22
+                spacing: 5
+
+                Text {
+                    Layout.fillWidth: true
+                    text: "Aplicar «" + (applyDialog.item.name || "perfil") + "»"
+                    color: Theme.text
+                    font.pixelSize: 18
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: "Esto va a cambiar tu escritorio actual. Se crea un punto de retorno antes de aplicar."
+                    color: Theme.textDim
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+            }
+
+            Item { Layout.preferredHeight: 14 }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                spacing: 5
+
+                Text {
+                    Layout.fillWidth: true
+                    text: "Se descargará"
+                    color: Theme.textFaint
+                    font.pixelSize: 9
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.8
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: "· profile.json"
+                          + (applyDialog.hasWallpaper ? "  ·  fondo" : "")
+                          + (applyDialog.plugins > 0 ? "  ·  " + applyDialog.plugins + " plugins" : "")
+                          + (applyDialog.assets > 0 ? "  ·  " + applyDialog.assets + " assets" : "")
+                    color: Theme.textDim
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 6
+                    text: "Se aplicará"
+                    color: Theme.textFaint
+                    font.pixelSize: 9
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.8
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: "· Apariencia y ajustes seguros"
+                          + (applyDialog.hasWallpaper ? "  ·  fondo" : "")
+                          + (applyDialog.plugins > 0 ? "  ·  instalación de plugins" : "")
+                    color: Theme.textDim
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 6
+                    text: "Queda manual"
+                    color: Theme.textFaint
+                    font.pixelSize: 9
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.8
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: "· Atajos y layout: se muestran en el perfil, pero todavía no se aplican solos."
+                    color: Theme.textDim
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.topMargin: 12
+                implicitHeight: consentRow.implicitHeight + 20
+                radius: Theme.radiusSmall
+                color: Theme.surfaceAlt
+                border.width: 1
+                border.color: Theme.border
+                visible: applyDialog.needsConsent
+
+                RowLayout {
+                    id: consentRow
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 10
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Código de terceros"
+                            color: Theme.warn
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Se instalarán " + applyDialog.plugins + " plugins y "
+                                  + applyDialog.assets + " assets con hash verificado. Revisá su licencia antes de continuar."
+                            color: Theme.textFaint
+                            font.pixelSize: 10
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+
+                    AppSwitch {
+                        checked: applyDialog.confirmed
+                        onToggled: function(value) { applyDialog.confirmed = value }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.topMargin: 16
+                Layout.bottomMargin: 22
+                spacing: 10
+
+                Item { Layout.fillWidth: true }
+
+                AppButton {
+                    text: "Cancelar"
+                    variant: "ghost"
+                    onClicked: applyDialog.close()
+                }
+
+                AppButton {
+                    text: "Aplicar"
+                    variant: "primary"
+                    enabled: !applyDialog.needsConsent || applyDialog.confirmed
+                    onClicked: {
+                        applyDialog.close()
+                        backend.communityApply(applyDialog.item.id, true)
+                    }
                 }
             }
         }

@@ -176,6 +176,30 @@ def test_export_bundle_incluye_asset_personalizado(fake_home):
     assert "MiTema" in report["assets"]
 
 
+def test_export_bundle_respeta_opciones_de_privacidad(fake_home):
+    store, manifest = _backup(fake_home)
+    profile, _ = build_profile(
+        manifest, store, name="Demo opciones", author="yo", license="MIT"
+    )
+    out = fake_home / "perfil-minimo"
+    export_bundle(
+        profile,
+        out,
+        manifest=manifest,
+        store=store,
+        include_wallpaper=False,
+        include_plugins=False,
+        include_cover=False,
+    )
+
+    assert not (out / "wallpaper.jpg").exists()
+    assert not (out / "plugins").exists()
+    data = json.loads((out / "profile.json").read_text())
+    assert data["wallpaper"] == {}
+    assert data["plugins"] == []
+    assert data["preview"]["cover"] == ""
+
+
 def test_apply_profile_instala_plugin(fake_home):
     store, manifest = _backup(fake_home)
     profile, _ = build_profile(manifest, store, name="Demo", author="yo", license="MIT")

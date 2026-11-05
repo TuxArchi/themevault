@@ -322,6 +322,10 @@ ApplicationWindow {
             onShareRequested: function(notes, name) {
                 shareDialog.openFor(backupId, notes, name, "")
             }
+
+            onNotify: function(message, error) {
+                window.showToast(message, error ? "error" : "ok")
+            }
         }
     }
 
