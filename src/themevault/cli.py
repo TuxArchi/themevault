@@ -148,6 +148,11 @@ def cmd_detect(args: argparse.Namespace) -> int:
         ("xfconf-query", "xfce"),
         ("gsettings", "gnome"),
         ("hyprctl", "hyprland"),
+        ("niri", "niri"),
+        ("swaymsg", "sway"),
+        ("riverctl", "river"),
+        ("wayfire", "wayfire"),
+        ("labwc", "labwc"),
         (screenshot_tool() or "-", "capturas de portada"),
     ]
     for name, purpose in tools:
@@ -298,11 +303,25 @@ def cmd_restore(args: argparse.Namespace) -> int:
         print(red(f"{len(report.failures)} fallaron"))
         for name, message in report.failures:
             print(f"  {red('·')} {name}: {message}")
-    if report.applied and manifest.de in ("kde", "gnome", "hyprland"):
-        if manifest.de == "hyprland":
-            print(dim("\nEjecuta `hyprctl reload` o reinicia la sesion para aplicar los cambios."))
-        else:
-            print(dim("\nReinicia la sesion (o el escritorio) para ver todos los cambios."))
+    if report.applied and manifest.de in (
+        "kde",
+        "gnome",
+        "hyprland",
+        "niri",
+        "sway",
+        "river",
+        "wayfire",
+        "labwc",
+    ):
+        hints = {
+            "hyprland": "Ejecuta `hyprctl reload` o reinicia la sesion.",
+            "niri": "Ejecuta `niri validate`; niri recarga la configuracion sola.",
+            "sway": "Ejecuta `swaymsg reload` para aplicar los cambios.",
+            "river": "Reinicia River para volver a cargar su configuracion.",
+            "wayfire": "Reinicia Wayfire para aplicar los cambios.",
+            "labwc": "Ejecuta `labwc --reconfigure` o reinicia la sesion.",
+        }
+        print(dim("\n" + hints.get(manifest.de, "Reinicia la sesion para ver los cambios.")))
     return 0 if report.ok else 1
 
 
@@ -356,7 +375,7 @@ def cmd_rebuild(args: argparse.Namespace) -> int:
     store = engine.store(manifest.id)
     base = engine.backup_dir(manifest.id)
 
-    from .hypr import keybinds_from_items
+    from .keybinds import keybinds_from_items
 
     layout = widgets_from_items(manifest.items, store)
     manifest.containers = layout["containers"]
@@ -623,7 +642,7 @@ def build_parser() -> argparse.ArgumentParser:
         "-a",
         "--adapter",
         action="append",
-        help="forzar adaptador (gnome/kde/xfce/hyprland)",
+        help="forzar adaptador (gnome/kde/xfce/hyprland/niri/sway/river/wayfire/labwc)",
     )
     backup.add_argument(
         "--no-preview",

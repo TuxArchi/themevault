@@ -12,7 +12,7 @@ from .adapters import Adapter, Collector, detected_adapters
 from .detect import detect_host
 from .model import Manifest
 from . import plasma_layout
-from .hypr import keybinds_from_items
+from .keybinds import keybinds_from_items
 from .preview import build_preview
 from .store import BlobStore
 from .util import (

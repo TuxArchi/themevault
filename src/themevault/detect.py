@@ -28,7 +28,12 @@ _DE_ALIASES = {
     "deepin": "deepin",
     "cosmic": "cosmic",
     "sway": "sway",
+    "scroll": "sway",
     "hyprland": "hyprland",
+    "niri": "niri",
+    "river": "river",
+    "wayfire": "wayfire",
+    "labwc": "labwc",
     "i3": "i3",
     "openbox": "openbox",
 }
@@ -81,6 +86,11 @@ def detect_de() -> str:
 
     probes = (
         ("hyprland", home() / ".config" / "hypr" / "hyprland.conf"),
+        ("niri", home() / ".config" / "niri" / "config.kdl"),
+        ("sway", home() / ".config" / "sway" / "config"),
+        ("river", home() / ".config" / "river" / "init"),
+        ("wayfire", home() / ".config" / "wayfire.ini"),
+        ("labwc", home() / ".config" / "labwc" / "rc.xml"),
         ("kde", xdg_data_home() / "plasma" / "desktoptheme"),
         ("kde", home() / ".config" / "plasma-org.kde.plasma.desktop-appletsrc"),
         ("gnome", xdg_data_home() / "gnome-shell" / "extensions"),

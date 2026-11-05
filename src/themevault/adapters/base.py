@@ -98,6 +98,10 @@ class Collector:
         allowed_names: tuple[str, ...] = (),
         allowed_suffixes: tuple[str, ...] = (),
         tag: dict | None = None,
+        allow_any_name: bool = False,
+        allow_no_extension: bool = False,
+        allow_shebang: bool = False,
+        skip_dirs: tuple[str, ...] = (),
     ) -> list[Item]:
         """Agrega solo archivos de configuración seguros de un directorio.
 
@@ -112,6 +116,10 @@ class Collector:
             path,
             allowed_names=frozenset(allowed_names),
             allowed_suffixes=frozenset(allowed_suffixes),
+            allow_any_name=allow_any_name,
+            allow_no_extension=allow_no_extension,
+            allow_shebang=allow_shebang,
+            skip_dirs=skip_dirs,
         ):
             if reason:
                 self.skipped.append((str(candidate), reason))
@@ -123,6 +131,41 @@ class Collector:
                 item.meta.update(tag)
             added.append(item)
         return added
+
+    def add_safe_file(
+        self,
+        path: str | Path,
+        category: str,
+        *,
+        name: str | None = None,
+        allowed_names: tuple[str, ...] = (),
+        allowed_suffixes: tuple[str, ...] = (),
+        allow_any_name: bool = False,
+        allow_no_extension: bool = False,
+        allow_shebang: bool = False,
+        tag: dict | None = None,
+    ) -> Item | None:
+        """Agrega un archivo concreto pasando por la lista blanca de privacidad."""
+        from ..privacy import read_config_text
+
+        candidate = expand(path)
+        if not candidate.is_file():
+            return None
+        _text, reason = read_config_text(
+            candidate,
+            allowed_names=frozenset(allowed_names),
+            allowed_suffixes=frozenset(allowed_suffixes),
+            allow_any_name=allow_any_name,
+            allow_no_extension=allow_no_extension,
+            allow_shebang=allow_shebang,
+        )
+        if reason:
+            self.skipped.append((str(candidate), reason))
+            return None
+        item = self.add_file(candidate, category, name=name)
+        if item is not None and tag:
+            item.meta.update(tag)
+        return item
 
     def add_tree(
         self,

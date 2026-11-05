@@ -112,6 +112,132 @@ def _hyprctl() -> list[Screen]:
     return screens
 
 
+def _niri() -> list[Screen]:
+    if which("niri") is None:
+        return []
+    proc = run(["niri", "msg", "--json", "outputs"], timeout=10)
+    if proc is None or proc.returncode != 0:
+        return []
+    try:
+        data = json.loads(proc.stdout.decode("utf-8", "replace"))
+    except (ValueError, UnicodeDecodeError):
+        return []
+    if not isinstance(data, dict):
+        return []
+
+    screens: list[Screen] = []
+    for name, item in data.items():
+        if not isinstance(item, dict):
+            continue
+        logical = item.get("logical")
+        if not isinstance(logical, dict):
+            continue
+        try:
+            screens.append(
+                Screen(
+                    name=str(name),
+                    x=int(logical.get("x") or 0),
+                    y=int(logical.get("y") or 0),
+                    width=int(logical.get("width") or 0),
+                    height=int(logical.get("height") or 0),
+                    scale=float(logical.get("scale") or 1.0),
+                )
+            )
+        except (TypeError, ValueError):
+            continue
+    return [screen for screen in screens if screen.width and screen.height]
+
+
+def _sway() -> list[Screen]:
+    if which("swaymsg") is None:
+        return []
+    proc = run(["swaymsg", "-t", "get_outputs", "--raw"], timeout=10)
+    if proc is None or proc.returncode != 0:
+        return []
+    try:
+        data = json.loads(proc.stdout.decode("utf-8", "replace"))
+    except (ValueError, UnicodeDecodeError):
+        return []
+    if not isinstance(data, list):
+        return []
+
+    screens: list[Screen] = []
+    for item in data:
+        if not isinstance(item, dict) or not item.get("active", True):
+            continue
+        rect = item.get("rect") or {}
+        try:
+            width = int(rect.get("width") or 0)
+            height = int(rect.get("height") or 0)
+            if not width or not height:
+                continue
+            screens.append(
+                Screen(
+                    name=str(item.get("name") or "Monitor"),
+                    x=int(rect.get("x") or 0),
+                    y=int(rect.get("y") or 0),
+                    width=width,
+                    height=height,
+                    scale=float(item.get("scale") or 1.0),
+                )
+            )
+        except (TypeError, ValueError):
+            continue
+    return screens
+
+
+def _wlr_randr() -> list[Screen]:
+    if which("wlr-randr") is None:
+        return []
+    proc = run(["wlr-randr", "--json"], timeout=10)
+    if proc is None or proc.returncode != 0:
+        return []
+    try:
+        data = json.loads(proc.stdout.decode("utf-8", "replace"))
+    except (ValueError, UnicodeDecodeError):
+        return []
+    if not isinstance(data, list):
+        return []
+
+    screens: list[Screen] = []
+    for item in data:
+        if not isinstance(item, dict) or not item.get("enabled", True):
+            continue
+        logical = item.get("logical")
+        logical = logical if isinstance(logical, dict) else {}
+        position = item.get("position")
+        position = position if isinstance(position, dict) else {}
+        width = int(item.get("width") or logical.get("width") or 0)
+        height = int(item.get("height") or logical.get("height") or 0)
+        if not width or not height:
+            mode = item.get("current_mode")
+            if isinstance(mode, dict):
+                width = int(mode.get("width") or 0)
+                height = int(mode.get("height") or 0)
+        if not width or not height:
+            for mode in item.get("modes") or []:
+                if isinstance(mode, dict) and mode.get("current"):
+                    width = int(mode.get("width") or 0)
+                    height = int(mode.get("height") or 0)
+                    break
+        if not width or not height:
+            continue
+        try:
+            screens.append(
+                Screen(
+                    name=str(item.get("name") or "Monitor"),
+                    x=int(position.get("x", logical.get("x", 0)) or 0),
+                    y=int(position.get("y", logical.get("y", 0)) or 0),
+                    width=width,
+                    height=height,
+                    scale=float(item.get("scale") or logical.get("scale") or 1.0),
+                )
+            )
+        except (TypeError, ValueError):
+            continue
+    return screens
+
+
 def _xrandr() -> list[Screen]:
     if which("xrandr") is None:
         return []
@@ -139,7 +265,7 @@ def _xrandr() -> list[Screen]:
 
 def detect() -> list[Screen]:
     """Monitores activos. Lista vacia si no se pueden detectar."""
-    for probe in (_kscreen, _hyprctl, _xrandr):
+    for probe in (_kscreen, _hyprctl, _niri, _sway, _wlr_randr, _xrandr):
         try:
             found = probe()
         except Exception:

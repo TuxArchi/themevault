@@ -9,11 +9,26 @@ from .base import Adapter, Collector
 from .gnome import GnomeAdapter
 from .hyprland import HyprlandAdapter
 from .kde import KdeAdapter
+from .labwc import LabwcAdapter
+from .niri import NiriAdapter
+from .river import RiverAdapter
+from .sway import SwayAdapter
+from .wayfire import WayfireAdapter
 from .xfce import XfceAdapter
 
 REGISTRY: dict[str, type[Adapter]] = {
     cls.id: cls
-    for cls in (GnomeAdapter, KdeAdapter, HyprlandAdapter, XfceAdapter)
+    for cls in (
+        GnomeAdapter,
+        KdeAdapter,
+        HyprlandAdapter,
+        NiriAdapter,
+        SwayAdapter,
+        RiverAdapter,
+        WayfireAdapter,
+        LabwcAdapter,
+        XfceAdapter,
+    )
 }
 
 

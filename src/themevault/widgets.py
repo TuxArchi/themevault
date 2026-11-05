@@ -742,6 +742,48 @@ def parse_waybar(text: str) -> tuple[list[dict], list[dict]]:
     return containers, widgets
 
 
+# ----------------------------------------------------------------------- SWAY
+
+
+def parse_sway_bar(text: str) -> tuple[list[dict], list[dict]]:
+    from .sway import parse_bar
+
+    containers: list[dict] = []
+    for index, raw in enumerate(parse_bar(text), start=1):
+        location = {
+            "top": "superior",
+            "bottom": "inferior",
+            "left": "izquierda",
+            "right": "derecha",
+        }.get(str(raw.get("position") or "bottom").lower(), "inferior")
+        settings = [
+            {"label": "Posición", "value": location},
+            {"label": "Modo", "value": str(raw.get("mode") or "dock")},
+        ]
+        if raw.get("status_command"):
+            settings.append({"label": "Estado", "value": str(raw["status_command"])})
+        containers.append(
+            {
+                "id": f"sway-bar-{index}",
+                "kind": "panel",
+                "name": "Barra de Sway" if index == 1 else f"Barra de Sway {index}",
+                "location": location,
+                "screen": 0,
+                "size": raw.get("height"),
+                "floating": False,
+                "visibility": "ocultar automaticamente"
+                if str(raw.get("mode") or "").lower() == "hide"
+                else "siempre visible",
+                "alignment": "centro",
+                "length": "completo",
+                "order": [],
+                "widgets": 0,
+                "settings": settings,
+            }
+        )
+    return containers, []
+
+
 # ------------------------------------------------------------------ agregador
 
 
@@ -757,7 +799,7 @@ def from_items(items: list[Item], store) -> dict:
         except (OSError, UnicodeDecodeError):
             return ""
 
-    appletsrc = plasmashellrc = xfce_panel = waybar_config = ""
+    appletsrc = plasmashellrc = xfce_panel = waybar_config = sway_config = ""
     for item in items:
         if not item.blob:
             continue
@@ -777,6 +819,8 @@ def from_items(items: list[Item], store) -> dict:
             waybar_config = read(item)
         elif (item.meta or {}).get("waybar_config"):
             waybar_config = read(item)
+        elif source.endswith("/sway/config"):
+            sway_config = read(item)
 
     if appletsrc:
         containers, widgets = parse_plasma(appletsrc, plasmashellrc)
@@ -784,6 +828,8 @@ def from_items(items: list[Item], store) -> dict:
         containers, widgets = parse_xfce(xfce_panel)
     elif waybar_config:
         containers, widgets = parse_waybar(waybar_config)
+    elif sway_config:
+        containers, widgets = parse_sway_bar(sway_config)
     elif dumps:
         containers, widgets = parse_gnome(dumps)
 

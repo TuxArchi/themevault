@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "themevault"
-version = "0.5.0"
-description = "Respaldo y restauracion de la personalizacion del escritorio Linux (KDE, GNOME, Xfce, Hyprland)"
+version = "0.6.0"
+description = "Respaldo y restauracion de la personalizacion del escritorio Linux (KDE, GNOME, Xfce, Hyprland, niri, Sway, River, Wayfire, labwc)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }
@@ -21,6 +21,11 @@ keywords = [
     "gnome",
     "xfce",
     "hyprland",
+    "niri",
+    "sway",
+    "river",
+    "wayfire",
+    "labwc",
     "wayland",
     "qt",
 ]

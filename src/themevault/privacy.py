@@ -30,6 +30,7 @@ CONFIG_SUFFIXES = {
     ".colors",
     ".theme",
     ".xml",
+    ".kdl",
 }
 
 # Nombres sin extensión que también son configuración.
@@ -43,6 +44,7 @@ CONFIG_NAMES = {
     "hyprlock.conf",
     "hypridle.conf",
     "hyprsunset.conf",
+    "config.kdl",
     "kitty.conf",
     "alacritty.toml",
     "foot.ini",
@@ -212,9 +214,19 @@ def is_personal_path(path: Path) -> bool:
     return False
 
 
-def _name_allowed(name: str, allowed_names: set[str], allowed_suffixes: set[str]) -> bool:
+def _name_allowed(
+    name: str,
+    allowed_names: set[str],
+    allowed_suffixes: set[str],
+    allow_any_name: bool = False,
+    allow_no_extension: bool = False,
+) -> bool:
     lower = name.lower()
     suffix = Path(lower).suffix
+    if allow_any_name:
+        return True
+    if allow_no_extension and not suffix:
+        return True
     if not allowed_names and not allowed_suffixes:
         return lower in CONFIG_NAMES or suffix in CONFIG_SUFFIXES
     return lower in allowed_names or suffix in allowed_suffixes
@@ -225,6 +237,9 @@ def read_config_text(
     *,
     allowed_names: set[str] | frozenset[str] = frozenset(),
     allowed_suffixes: set[str] | frozenset[str] = frozenset(),
+    allow_any_name: bool = False,
+    allow_no_extension: bool = False,
+    allow_shebang: bool = False,
 ) -> tuple[str | None, str]:
     """Devuelve (texto, "") si el archivo es configuración segura.
 
@@ -243,7 +258,13 @@ def read_config_text(
         return None, "archivo multimedia (no se respalda)"
     if is_personal_path(candidate):
         return None, "ruta personal (no se respalda)"
-    if not _name_allowed(name, set(allowed_names), set(allowed_suffixes)):
+    if not _name_allowed(
+        name,
+        set(allowed_names),
+        set(allowed_suffixes),
+        allow_any_name=allow_any_name,
+        allow_no_extension=allow_no_extension,
+    ):
         return None, "extensión o nombre no permitido"
 
     try:
@@ -267,7 +288,7 @@ def read_config_text(
         text = data.decode("utf-8")
     except UnicodeDecodeError:
         return None, "no es texto UTF-8"
-    if text.startswith("#!"):
+    if text.startswith("#!") and not allow_shebang:
         return None, "parece un script (no se respalda)"
 
     return text, ""
@@ -278,6 +299,10 @@ def iter_config_files(
     *,
     allowed_names: set[str] | frozenset[str] = frozenset(),
     allowed_suffixes: set[str] | frozenset[str] = frozenset(),
+    allow_any_name: bool = False,
+    allow_no_extension: bool = False,
+    allow_shebang: bool = False,
+    skip_dirs: tuple[str, ...] = (),
 ) -> Iterator[tuple[Path, str]]:
     """Recorre ``root`` y devuelve ``(ruta, motivo)``.
 
@@ -331,6 +356,9 @@ def iter_config_files(
                         target,
                         allowed_names=allowed_names,
                         allowed_suffixes=allowed_suffixes,
+                        allow_any_name=allow_any_name,
+                        allow_no_extension=allow_no_extension,
+                        allow_shebang=allow_shebang,
                     )
                     yield target, reason
                 continue
@@ -339,12 +367,17 @@ def iter_config_files(
                 if name.lower() in SKIP_DIRS:
                     yield entry, "carpeta omitida por privacidad"
                     continue
+                if name.lower() in {item.lower() for item in skip_dirs}:
+                    continue
                 yield from walk(entry)
             elif entry.is_file():
                 _text, reason = read_config_text(
                     entry,
                     allowed_names=allowed_names,
                     allowed_suffixes=allowed_suffixes,
+                    allow_any_name=allow_any_name,
+                    allow_no_extension=allow_no_extension,
+                    allow_shebang=allow_shebang,
                 )
                 yield entry, reason
 

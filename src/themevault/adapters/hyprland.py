@@ -15,6 +15,7 @@ import configparser
 import re
 from pathlib import Path
 
+from ..ecosystem import collect_ecosystem
 from ..hypr import (
     SOURCE_SUFFIXES,
     HyprState,
@@ -28,26 +29,6 @@ from .base import Adapter, Collector
 
 # Solo configuración de Hyprland. Los scripts no entran.
 HYPR_SUFFIXES = (".conf",)
-
-# (ruta, categoría, nombres permitidos, extensiones permitidas)
-CONFIG_DIRS: tuple[tuple[str, str, tuple[str, ...], tuple[str, ...]], ...] = (
-    ("~/.config/hypr", "layout", (), (".conf",)),
-    ("~/.config/waybar", "layout", ("config", "config.jsonc"), (".json", ".jsonc", ".css", ".conf")),
-    ("~/.config/wlogout", "layout", ("layout", "style.css"), (".json", ".css", ".conf")),
-    ("~/.config/wofi", "shell", ("config",), (".css", ".conf", ".ini")),
-    ("~/.config/rofi", "shell", ("config",), (".rasi", ".css", ".conf", ".ini")),
-    ("~/.config/swaync", "shell", ("config",), (".json", ".css", ".conf")),
-    ("~/.config/mako", "shell", ("config",), (".conf", ".ini")),
-    ("~/.config/dunst", "shell", ("dunstrc",), (".conf",)),
-    ("~/.config/kitty", "config", (), (".conf",)),
-    ("~/.config/alacritty", "config", ("alacritty.toml",), (".toml", ".yml", ".yaml")),
-    ("~/.config/foot", "config", ("foot.ini",), (".ini",)),
-    ("~/.config/qt5ct", "theme", ("qt5ct.conf",), (".conf",)),
-    ("~/.config/qt6ct", "theme", ("qt6ct.conf",), (".conf",)),
-    ("~/.config/Kvantum", "theme", ("kvantum.kvconfig",), (".kvconfig",)),
-    ("~/.config/xsettingsd", "theme", ("xsettingsd.conf",), (".conf",)),
-    ("~/.local/share/color-schemes", "colorscheme", (), (".colors",)),
-)
 
 SETCURSOR_RE = re.compile(
     r"hyprctl\s+setcursor\s+([^\s,]+)(?:\s+(\d+))?", re.IGNORECASE
@@ -161,18 +142,8 @@ class HyprlandAdapter(Adapter):
             tag={"hypr_config": True},
         )
 
-        # Resto del ecosistema: solo configuración, sin scripts ni imágenes.
-        for raw, category, names, suffixes in CONFIG_DIRS[1:]:
-            added = collector.add_config_files(
-                raw,
-                category,
-                allowed_names=names,
-                allowed_suffixes=suffixes,
-            )
-            if raw == "~/.config/waybar":
-                for item in added:
-                    if item.name in ("config", "config.jsonc"):
-                        item.meta["waybar_config"] = True
+        # Apps y shells compartidas por todos los compositores Wayland.
+        collect_ecosystem(collector)
 
         # Si no hay hyprland.conf, igual intentamos leer los .conf presentes.
         if not main.is_file():
@@ -188,9 +159,10 @@ class HyprlandAdapter(Adapter):
                 except OSError:
                     continue
                 item.meta["hypr"] = True
+                item.meta["keybind_format"] = "hypr"
                 feed_text(state, text, item.source or "")
 
-        collector.meta["keybinds"] = state.binds
+        collector.meta.setdefault("keybinds", []).extend(state.binds)
 
     def _parse_file(
         self,
@@ -244,6 +216,7 @@ class HyprlandAdapter(Adapter):
                 "hypr": True,
                 "hypr_config": True,
                 "hypr_order": len(visited),
+                "keybind_format": "hypr",
             }
         )
 
