@@ -80,6 +80,7 @@ def detect_de() -> str:
             return _DE_ALIASES[candidate]
 
     probes = (
+        ("hyprland", home() / ".config" / "hypr" / "hyprland.conf"),
         ("kde", xdg_data_home() / "plasma" / "desktoptheme"),
         ("kde", home() / ".config" / "plasma-org.kde.plasma.desktop-appletsrc"),
         ("gnome", xdg_data_home() / "gnome-shell" / "extensions"),

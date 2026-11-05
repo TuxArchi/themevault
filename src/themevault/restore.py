@@ -270,6 +270,12 @@ def _restore_file(item: Item, store: BlobStore) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     tmp = destination.with_name(f".{destination.name}.themevault.tmp")
     tmp.write_bytes(data)
+    mode = (item.meta or {}).get("mode")
+    if isinstance(mode, int) and 0 <= mode <= 0o777:
+        try:
+            os.chmod(tmp, mode)
+        except OSError:
+            pass
     os.replace(tmp, destination)
 
 

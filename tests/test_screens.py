@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 
 import pytest
@@ -54,6 +55,53 @@ def test_xrandr(monkeypatch):
     found = screens.detect()
     assert [s.name for s in found] == ["DP-3", "HDMI-A-1"]
     assert found[1].x == 1920
+
+
+HYPRCTL = json.dumps(
+    [
+        {
+            "name": "DP-1",
+            "width": 2560,
+            "height": 1440,
+            "x": 0,
+            "y": 0,
+            "scale": 1.0,
+            "disabled": False,
+        },
+        {
+            "name": "HDMI-A-1",
+            "width": 1920,
+            "height": 1080,
+            "x": 2560,
+            "y": 0,
+            "scale": 1.0,
+            "disabled": False,
+        },
+        {
+            "name": "DP-2",
+            "width": 1920,
+            "height": 1080,
+            "x": 0,
+            "y": 0,
+            "scale": 1.0,
+            "disabled": True,
+        },
+    ]
+)
+
+
+def test_hyprctl(monkeypatch):
+    monkeypatch.setattr(
+        screens,
+        "which",
+        lambda *names: "/usr/bin/hyprctl" if "hyprctl" in names else None,
+    )
+    monkeypatch.setattr(screens, "run", fake_run(HYPRCTL))
+
+    found = screens.detect()
+    assert [item.name for item in found] == ["DP-1", "HDMI-A-1"]
+    assert found[1].x == 2560
+    assert found[0].width == 2560
 
 
 def test_sin_herramientas(monkeypatch):

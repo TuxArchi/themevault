@@ -120,13 +120,13 @@ Popup {
                 spacing: 2
 
                 Text {
-                    text: "Incluir captura del escritorio"
+                    text: "Incluir portada (captura y fondo)"
                     color: Theme.text
                     font.pixelSize: 12
                 }
 
                 Text {
-                    text: "Las ventanas se ocultan un instante al capturar: solo se ve el escritorio."
+                    text: "Si lo desactivás, la copia solo guarda configuración y no copia imágenes."
                     color: Theme.textFaint
                     font.pixelSize: 10
                 }

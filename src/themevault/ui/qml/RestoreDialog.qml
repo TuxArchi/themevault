@@ -801,8 +801,11 @@ Popup {
                 Layout.topMargin: 12
                 Layout.fillWidth: true
                 visible: dlg.result && !dlg.result.perScreen && dlg.result.applied > 0
-                         && dlg.plan && (dlg.plan.de === "kde" || dlg.plan.de === "gnome")
-                text: "Reiniciá la sesión para ver todos los cambios."
+                         && dlg.plan && (dlg.plan.de === "kde" || dlg.plan.de === "gnome"
+                                         || dlg.plan.de === "hyprland")
+                text: dlg.plan && dlg.plan.de === "hyprland"
+                      ? "Ejecutá `hyprctl reload` o reiniciá la sesión para aplicar atajos y reglas."
+                      : "Reiniciá la sesión para ver todos los cambios."
                 color: Theme.textDim
                 font.pixelSize: 12
             }

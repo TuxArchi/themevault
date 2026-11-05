@@ -7,11 +7,13 @@ from __future__ import annotations
 
 from .base import Adapter, Collector
 from .gnome import GnomeAdapter
+from .hyprland import HyprlandAdapter
 from .kde import KdeAdapter
 from .xfce import XfceAdapter
 
 REGISTRY: dict[str, type[Adapter]] = {
-    cls.id: cls for cls in (GnomeAdapter, KdeAdapter, XfceAdapter)
+    cls.id: cls
+    for cls in (GnomeAdapter, KdeAdapter, HyprlandAdapter, XfceAdapter)
 }
 
 

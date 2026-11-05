@@ -32,6 +32,7 @@ DE_LABELS = {
     "gnome": "GNOME",
     "kde": "KDE Plasma",
     "xfce": "Xfce",
+    "hyprland": "Hyprland",
     "cinnamon": "Cinnamon",
     "mate": "MATE",
     "budgie": "Budgie",
@@ -153,6 +154,7 @@ class BackupListModel(QAbstractListModel):
             "deLabel": de_label(manifest.de),
             "sizeText": human_size(manifest.total_size),
             "itemsText": f"{len(manifest.items)} elementos"
+            + (f" · {len(manifest.keybinds)} atajos" if manifest.keybinds else "")
             + (f" · {len(manifest.widgets)} widgets" if manifest.widgets else ""),
             "thumb": thumb,
             "hasThumb": bool(thumb),

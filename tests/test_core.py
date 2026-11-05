@@ -129,3 +129,16 @@ def test_collector_skips_missing_paths(fake_home, tmp_path):
     collector = Collector(store)
     assert collector.add_file("~/.no-existe/archivo.ini", "config") is None
     assert collector.items == []
+
+
+def test_detecta_hyprland_por_su_config(fake_home, monkeypatch):
+    from themevault.detect import detect_de
+
+    for name in ("XDG_CURRENT_DESKTOP", "XDG_SESSION_DESKTOP", "DESKTOP_SESSION"):
+        monkeypatch.delenv(name, raising=False)
+
+    hypr = fake_home / ".config" / "hypr"
+    hypr.mkdir(parents=True)
+    (hypr / "hyprland.conf").write_text("$mainMod = SUPER\n")
+
+    assert detect_de() == "hyprland"

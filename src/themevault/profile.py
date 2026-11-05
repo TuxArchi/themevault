@@ -22,7 +22,17 @@ from .util import is_within
 
 SCHEMA = 1
 
-DESKTOPS = ("kde", "gnome", "xfce", "cinnamon", "mate", "budgie", "lxqt", "other")
+DESKTOPS = (
+    "kde",
+    "gnome",
+    "xfce",
+    "hyprland",
+    "cinnamon",
+    "mate",
+    "budgie",
+    "lxqt",
+    "other",
+)
 
 LICENSES = (
     "CC0-1.0",

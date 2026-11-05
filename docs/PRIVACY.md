@@ -20,6 +20,7 @@ Un perfil no es una copia. Es una descripción del aspecto, generada con una
 
 - Rutas absolutas, `~`, nombres de usuario o hostname.
 - Archivos de la copia: temas, iconos, fuentes, wallpapers, `files/`.
+- Atajos de teclado, comandos o texto de configuración de Hyprland.
 - Nombres de archivos del escritorio, títulos de ventanas o historial de apps.
 - UUIDs de actividad, geometrías de pantalla o configuración de layouts.
 - Texto de widgets (notas, portapapeles, favoritos).
@@ -60,6 +61,28 @@ perfil ni ningún dato tuyo: la publicación sigue siendo manual.
 | `~/.cache/themevault/community.json` | índice de perfiles (fase 2) |
 
 Todo es local y se puede borrar sin afectar al sistema.
+
+### Hyprland
+
+Las copias de Hyprland incluyen **solo archivos de configuración** de una lista
+blanca: `hyprland.conf`, sus `source` dentro de `$HOME`, Waybar, lanzadores,
+notificaciones, terminales y estilos Qt/GTK.
+
+Nunca se copian como archivos restaurables:
+
+- fotos, wallpapers, videos, audio ni PDFs;
+- documentos, notas ni historiales;
+- scripts (`*.sh`, `*.py`, `*.lua`, binarios);
+- claves SSH/GPG, credenciales, `.env`, `authorized_keys` ni similares;
+- archivos incluidos con `source` fuera de `$HOME` o en carpetas personales.
+
+Los atajos de teclado se guardan en el manifest y se muestran en el detalle,
+pero **no se incluyen en los perfiles compartidos**. Si un atajo apunta a un
+script, el script queda fuera y se lista solo como dependencia externa.
+
+La portada es opcional. Si se activa, la captura se hace en un workspace
+especial temporal y el fondo se copia únicamente dentro de `preview/` para
+generar la imagen. Con `--no-preview` no se guarda ninguna imagen.
 
 ## Cómo revocar un perfil publicado
 

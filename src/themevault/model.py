@@ -15,8 +15,10 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any
 
+from . import __version__
+
 SCHEMA_VERSION = 1
-APP_VERSION = "0.1.0"
+APP_VERSION = __version__
 
 KIND_FILE = "file"
 KIND_TREE = "tree"
@@ -92,6 +94,7 @@ class Manifest:
     preview: dict[str, Any] = field(default_factory=dict)
     containers: list[dict[str, Any]] = field(default_factory=list)
     widgets: list[dict[str, Any]] = field(default_factory=list)
+    keybinds: list[dict[str, Any]] = field(default_factory=list)
     label: str = ""
     notes: str = ""
     schema: int = SCHEMA_VERSION
@@ -125,7 +128,7 @@ class Manifest:
     # -------------------------------------------------------------- serializar
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        raw = {
             "schema": self.schema,
             "app_version": self.app_version,
             "id": self.id,
@@ -138,6 +141,9 @@ class Manifest:
             "widgets": self.widgets,
             "items": [item.to_dict() for item in self.items],
         }
+        if self.keybinds:
+            raw["keybinds"] = self.keybinds
+        return raw
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "Manifest":
@@ -149,6 +155,7 @@ class Manifest:
             preview=raw.get("preview", {}),
             containers=raw.get("containers", []),
             widgets=raw.get("widgets", []),
+            keybinds=raw.get("keybinds") or [],
             label=raw.get("label", ""),
             notes=raw.get("notes", ""),
             schema=raw.get("schema", SCHEMA_VERSION),

@@ -96,6 +96,21 @@ def _print_manifest(manifest: Manifest, *, verbose: bool = False) -> None:
                 suffix = dim("  (no instalado)") if not widget.get("installed", True) else ""
                 print(f"      {mark} {widget['position']}. {widget['name']}{suffix}")
 
+    if manifest.keybinds:
+        print(f"\n  {bold('Atajos de teclado')} {dim(f'({len(manifest.keybinds)})')}")
+        for entry in manifest.keybinds:
+            combo = entry.get("combo") or entry.get("key") or ""
+            action = " ".join(
+                part for part in (entry.get("dispatcher", ""), entry.get("arg", "")) if part
+            )
+            details = []
+            if entry.get("submap"):
+                details.append(f"submapa {entry['submap']}")
+            if entry.get("description"):
+                details.append(str(entry["description"]))
+            suffix = dim("  · " + " · ".join(details)) if details else ""
+            print(f"    {combo:<22} {action}{suffix}")
+
     grouped = manifest.by_category()
     for category in CATEGORIES:
         items = grouped.get(category)
@@ -132,6 +147,7 @@ def cmd_detect(args: argparse.Namespace) -> int:
         ("dconf", "gnome/cinnamon/mate"),
         ("xfconf-query", "xfce"),
         ("gsettings", "gnome"),
+        ("hyprctl", "hyprland"),
         (screenshot_tool() or "-", "capturas de portada"),
     ]
     for name, purpose in tools:
@@ -171,7 +187,8 @@ def cmd_backup(args: argparse.Namespace) -> int:
     )
 
     print(green("Copia creada") + f"  {bold(manifest.id)}")
-    print(f"  {len(manifest.items)} items  ·  {human_size(manifest.total_size)}")
+    extra = f"  ·  {len(manifest.keybinds)} atajos" if manifest.keybinds else ""
+    print(f"  {len(manifest.items)} items  ·  {human_size(manifest.total_size)}{extra}")
     skipped = manifest.host.get("skipped") or []
     if skipped:
         print(yellow(f"  {len(skipped)} elementos omitidos:"))
@@ -281,8 +298,11 @@ def cmd_restore(args: argparse.Namespace) -> int:
         print(red(f"{len(report.failures)} fallaron"))
         for name, message in report.failures:
             print(f"  {red('·')} {name}: {message}")
-    if report.applied and manifest.de in ("kde", "gnome"):
-        print(dim("\nReinicia la sesion (o el escritorio) para ver todos los cambios."))
+    if report.applied and manifest.de in ("kde", "gnome", "hyprland"):
+        if manifest.de == "hyprland":
+            print(dim("\nEjecuta `hyprctl reload` o reinicia la sesion para aplicar los cambios."))
+        else:
+            print(dim("\nReinicia la sesion (o el escritorio) para ver todos los cambios."))
     return 0 if report.ok else 1
 
 
@@ -336,9 +356,12 @@ def cmd_rebuild(args: argparse.Namespace) -> int:
     store = engine.store(manifest.id)
     base = engine.backup_dir(manifest.id)
 
+    from .hypr import keybinds_from_items
+
     layout = widgets_from_items(manifest.items, store)
     manifest.containers = layout["containers"]
     manifest.widgets = layout["widgets"]
+    manifest.keybinds = keybinds_from_items(manifest.items, store)
 
     preview = manifest.preview or {}
     desktop = base / preview["screenshot"] if preview.get("screenshot") else None
@@ -361,7 +384,10 @@ def cmd_rebuild(args: argparse.Namespace) -> int:
     engine.save(manifest)
 
     print(green("Copia actualizada") + f"  {bold(manifest.id)}")
-    print(f"  {len(manifest.containers)} contenedores · {len(manifest.widgets)} widgets")
+    print(
+        f"  {len(manifest.containers)} contenedores · {len(manifest.widgets)} widgets"
+        f" · {len(manifest.keybinds)} atajos"
+    )
     print(f"  portada: {'si' if cover else 'no disponible'}")
     return 0
 
@@ -593,8 +619,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     backup = sub.add_parser("backup", parents=[common], help="crea una copia del estado actual")
     backup.add_argument("-m", "--message", help="etiqueta descriptiva")
-    backup.add_argument("-a", "--adapter", action="append", help="forzar adaptador (gnome/kde/xfce)")
-    backup.add_argument("--no-preview", action="store_true", help="no generar portada")
+    backup.add_argument(
+        "-a",
+        "--adapter",
+        action="append",
+        help="forzar adaptador (gnome/kde/xfce/hyprland)",
+    )
+    backup.add_argument(
+        "--no-preview",
+        action="store_true",
+        help="no guardar captura ni fondo: la copia queda solo con configuracion",
+    )
     backup.set_defaults(func=cmd_backup)
 
     listing = sub.add_parser("list", parents=[common], help="lista las copias")
