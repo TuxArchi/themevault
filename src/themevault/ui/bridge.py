@@ -80,6 +80,8 @@ STATUS_TEXT = {
     "community_apply": "Aplicando el perfil…",
     "profile_preview": "Preparando el perfil…",
     "profile_export": "Exportando el perfil…",
+    "audit": "Auditando la copia…",
+    "sanitized": "Creando copia saneada…",
 }
 
 
@@ -100,6 +102,8 @@ class Backend(QObject):
     communityApplied = Signal("QVariantMap")
     profilePreviewed = Signal("QVariantMap")
     profileExported = Signal("QVariantMap")
+    auditReady = Signal("QVariantMap")
+    sanitizedExported = Signal("QVariantMap")
     githubUserChanged = Signal()
     failed = Signal(str, str)
 
@@ -271,6 +275,10 @@ class Backend(QObject):
                     "license": e.get("license", ""),
                     "requires": e.get("requires") or {},
                     "settings": e.get("settings", 0),
+                    "wallpaper": e.get("wallpaper") or {},
+                    "plugins": e.get("plugins", 0),
+                    "assets": e.get("assets", 0),
+                    "keybinds": e.get("keybinds", 0),
                     "cover": community.cover_url(e),
                 }
                 for e in entries
@@ -327,7 +335,7 @@ class Backend(QObject):
 
         self._submit("community_apply", work)
 
-    @Slot(str, str, str, str, str, bool)
+    @Slot(str, str, str, str, str, bool, bool, bool, bool, bool)
     def profilePreview(  # noqa: N802
         self,
         backup_id: str,
@@ -336,16 +344,35 @@ class Backend(QObject):
         license_id: str,
         description: str,
         include_cover: bool,
+        include_wallpaper: bool,
+        include_plugins: bool,
+        include_keybinds: bool,
+        include_layout: bool,
     ) -> None:
         def work() -> dict:
             manifest, store, profile, dropped = self._build_profile(
-                backup_id, name, author, license_id, description, include_cover
+                backup_id,
+                name,
+                author,
+                license_id,
+                description,
+                include_cover,
+                include_wallpaper,
+                include_plugins,
+                include_keybinds,
+                include_layout,
             )
             cover = ""
             preview = manifest.preview or {}
-            rel = preview.get("cover") or preview.get("screenshot")
-            if include_cover and rel and (store.root / rel).is_file():
-                cover = QUrl.fromLocalFile(str(store.root / rel)).toString()
+            if include_cover and include_wallpaper:
+                rel = str(preview.get("wallpaper") or "")
+                if not rel:
+                    for screen in preview.get("screens") or []:
+                        if screen.get("wallpaper"):
+                            rel = str(screen["wallpaper"])
+                            break
+                if rel and (store.root / rel).is_file():
+                    cover = QUrl.fromLocalFile(str(store.root / rel)).toString()
 
             taken = any(str(e.get("id", "")) == profile.id for e in community.cached_index())
             suggested = ""
@@ -359,10 +386,11 @@ class Backend(QObject):
                 for item in manifest.items
                 if any((item.source or "").startswith(prefix) for prefix, _kind in PLUGIN_PREFIXES)
             )
+            has_video = _video_from_items(manifest, store) is not None
             has_wallpaper = bool(
                 (manifest.preview or {}).get("wallpaper")
                 or any(s.get("wallpaper") for s in (manifest.preview or {}).get("screens") or [])
-                or _video_from_items(manifest, store)
+                or has_video
             )
 
             return {
@@ -376,9 +404,10 @@ class Backend(QObject):
                 "requires": profile.requires,
                 "settings": profile.settings,
                 "settingsCount": len(profile.settings),
-                "hasWallpaper": has_wallpaper,
-                "wallpaperKind": "video" if _video_from_items(manifest, store) else "image",
-                "pluginCount": plugin_count,
+                "hasWallpaper": has_wallpaper and include_wallpaper,
+                "wallpaperKind": "video" if has_video else "image",
+                "pluginCount": plugin_count if include_plugins else 0,
+                "assetCount": len(profile.assets) if include_plugins else 0,
                 "keybindCount": len(profile.keybinds),
                 "layoutCount": len((profile.layout or {}).get("containers") or []),
                 "dropped": dropped,
@@ -391,7 +420,7 @@ class Backend(QObject):
 
         self._submit("profile_preview", work)
 
-    @Slot(str, str, str, str, str, bool, str)
+    @Slot(str, str, str, str, str, bool, bool, bool, bool, bool, str)
     def profileExport(  # noqa: N802
         self,
         backup_id: str,
@@ -400,11 +429,24 @@ class Backend(QObject):
         license_id: str,
         description: str,
         include_cover: bool,
+        include_wallpaper: bool,
+        include_plugins: bool,
+        include_keybinds: bool,
+        include_layout: bool,
         destination: str,
     ) -> None:
         def work() -> dict:
             manifest, store, profile, dropped = self._build_profile(
-                backup_id, name, author, license_id, description, include_cover
+                backup_id,
+                name,
+                author,
+                license_id,
+                description,
+                include_cover,
+                include_wallpaper,
+                include_plugins,
+                include_keybinds,
+                include_layout,
             )
             problems = validate_profile(profile)
             if problems:
@@ -414,7 +456,14 @@ class Backend(QObject):
             out = output_dir(base, profile)
             if out.exists():
                 shutil.rmtree(out)
-            export_bundle(profile, out, manifest=manifest, store=store)
+            export_bundle(
+                profile,
+                out,
+                manifest=manifest,
+                store=store,
+                include_wallpaper=include_wallpaper,
+                include_plugins=include_plugins,
+            )
             return {
                 "path": str(out),
                 "id": profile.id,
@@ -460,6 +509,43 @@ class Backend(QObject):
             return {"id": backup_id, "problems": self.engine.verify(backup_id)}
 
         self._submit("verify", work)
+
+    @Slot(str)
+    def auditBackup(self, backup_id: str) -> None:  # noqa: N802
+        from ..audit import audit_backup
+
+        def work() -> dict:
+            manifest = self.engine.load(backup_id)
+            store = self.engine.store(backup_id)
+            return audit_backup(manifest, store)
+
+        self._submit("audit", work)
+
+    @Slot(str, str, bool)
+    def exportSanitized(self, backup_id: str, destination: str, include_wallpaper: bool) -> None:  # noqa: N802
+        from ..sanitize import sanitized_copy
+
+        def work() -> dict:
+            manifest = self.engine.load(backup_id)
+            store = self.engine.store(backup_id)
+            base = Path(destination).expanduser() if destination.strip() else Path.home() / "themevault-saneadas"
+            target = base / f"{manifest.id}-saneada"
+            new_manifest, report = sanitized_copy(
+                manifest,
+                store,
+                target,
+                include_wallpaper=include_wallpaper,
+            )
+            return {
+                "id": backup_id,
+                "path": str(target),
+                "items": len(new_manifest.items),
+                "keybinds": len(new_manifest.keybinds),
+                "removed": report["removed"],
+                "sanitized": report["sanitized"],
+            }
+
+        self._submit("sanitized", work)
 
     @Slot()
     def openFolder(self) -> None:  # noqa: N802
@@ -617,6 +703,10 @@ class Backend(QObject):
         license_id: str,
         description: str,
         include_cover: bool,
+        include_wallpaper: bool = True,
+        include_plugins: bool = True,
+        include_keybinds: bool = True,
+        include_layout: bool = True,
     ):
         manifest = self.engine.resolve(backup_id)
         store = self.engine.store(manifest.id)
@@ -629,6 +719,20 @@ class Backend(QObject):
             description=description.strip(),
             include_cover=include_cover,
         )
+        if not include_wallpaper:
+            profile.wallpaper = {}
+            profile.cover = ""
+            dropped.append("el fondo no se comparte (lo desactivaste)")
+        if not include_plugins:
+            profile.plugins = []
+            profile.assets = []
+            dropped.append("los plugins y assets no se comparten (los desactivaste)")
+        if not include_keybinds:
+            profile.keybinds = []
+            dropped.append("los atajos no se comparten (los desactivaste)")
+        if not include_layout:
+            profile.layout = {}
+            dropped.append("el layout no se comparte (lo desactivaste)")
         return manifest, store, profile, dropped
 
     def _tools(self) -> list[dict]:
@@ -700,6 +804,11 @@ class Backend(QObject):
             self.profilePreviewed.emit(result)
         elif action == "profile_export":
             self.profileExported.emit(result)
+        elif action == "audit":
+            self.auditReady.emit(result)
+        elif action == "sanitized":
+            self.refresh()
+            self.sanitizedExported.emit(result)
 
     def _on_error(self, action: str, message: str, job: "_Job") -> None:
         self._jobs.discard(job)
