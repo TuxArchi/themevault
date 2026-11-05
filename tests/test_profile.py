@@ -270,12 +270,13 @@ def test_export_bundle_incluye_portada(tmp_path):
     (backup / "preview").mkdir()
     imagen = b"\x89PNG\r\n\x1a\n" + b"datos"
     (backup / "preview" / "cover.png").write_bytes(imagen)
+    (backup / "preview" / "wallpaper.png").write_bytes(imagen)
 
     manifest = Manifest(
         id="copia",
         created="2026-11-01T10:00:00",
         host={"de": "kde"},
-        preview={"cover": "preview/cover.png"},
+        preview={"cover": "preview/cover.png", "wallpaper": "preview/wallpaper.png"},
     )
     perfil = Profile(
         id="demo",
@@ -290,7 +291,7 @@ def test_export_bundle_incluye_portada(tmp_path):
     export_bundle(perfil, out, manifest=manifest, store=store)
 
     assert (out / "profile.json").is_file()
-    assert (out / "cover.png").read_bytes() == imagen
+    assert (out / "cover.jpg").read_bytes() == imagen
 
 
 def test_export_bundle_ignora_portada_fuera_de_la_copia(tmp_path):

@@ -340,7 +340,9 @@ def test_perfil_hyprland_no_exporta_atajos(fake_home):
     text = json.dumps(profile.to_dict(), ensure_ascii=False)
     assert profile.desktop == "hyprland"
     assert profile.settings == []
-    assert "keybinds" not in text
+    assert profile.keybinds
+    assert all(entry.get("safe") for entry in profile.keybinds)
+    assert not any("editor" in entry.get("arg", "") for entry in profile.keybinds)
+    assert "~/.local/bin/editor" not in text
     assert "hyprland.conf" not in text
-    assert "killactive" not in text
     assert dropped

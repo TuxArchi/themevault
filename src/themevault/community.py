@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import time
 import urllib.error
 import urllib.request
@@ -113,7 +114,7 @@ def fetch_profile(entry: dict) -> Profile:
     if not profile_id:
         raise CommunityError("perfil sin id")
 
-    raw = _fetch(f"{RAW}/{profile_id}/profile.json")
+    raw = _fetch(f"{RAW}/{profile_id}/profile.json", limit=4 * 1024 * 1024)
     expected = str(entry.get("sha256", ""))
     if expected and hashlib.sha256(raw).hexdigest() != expected:
         raise CommunityError("el perfil no coincide con el indice (hash distinto)")
@@ -129,6 +130,68 @@ def fetch_profile(entry: dict) -> Profile:
     problems = validate(profile)
     if problems:
         raise CommunityError("perfil invalido: " + "; ".join(problems))
+    return profile
+
+
+def _download(url: str, target: Path, limit: int) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    target.parent.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256()
+    total = 0
+    with urllib.request.urlopen(request, timeout=TIMEOUT, context=ssl_context()) as response:
+        with open(target, "wb") as handle:
+            while True:
+                chunk = response.read(1 << 20)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > limit:
+                    handle.close()
+                    target.unlink(missing_ok=True)
+                    raise CommunityError("el archivo del perfil es demasiado grande")
+                digest.update(chunk)
+                handle.write(chunk)
+    return digest.hexdigest()
+
+
+def fetch_profile_bundle(entry: dict, directory: Path) -> Profile:
+    """Descarga profile.json + wallpaper + plugins, verificando hashes."""
+    profile = fetch_profile(entry)
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "profile.json").write_text(
+        json.dumps(profile.to_dict(), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    base = f"{RAW}/{profile.id}"
+    files: list[tuple[str, str, int]] = []
+    if profile.cover:
+        files.append((profile.cover, "", 2 * 1024 * 1024))
+    wallpaper = profile.wallpaper or {}
+    for key in ("file", "fallback"):
+        name = str(wallpaper.get(key, "") or "")
+        if name:
+            files.append((name, str(wallpaper.get("sha256", "")) if key == "file" else "", 60 * 1024 * 1024))
+    for plugin in profile.plugins:
+        name = str(plugin.get("file", "") or "")
+        if name:
+            files.append((name, str(plugin.get("sha256", "")), 25 * 1024 * 1024))
+    for asset in profile.assets:
+        name = str(asset.get("file", "") or "")
+        if name:
+            files.append((name, str(asset.get("sha256", "")), 25 * 1024 * 1024))
+
+    for name, expected, limit in files:
+        if not name or ".." in Path(name).parts or Path(name).is_absolute():
+            continue
+        target = directory / name
+        if target.is_file():
+            continue
+        actual = _download(f"{base}/{name}", target, limit)
+        if expected and actual != expected:
+            target.unlink(missing_ok=True)
+            raise CommunityError(f"el archivo {name} no coincide con el hash publicado")
     return profile
 
 

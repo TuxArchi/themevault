@@ -1,8 +1,8 @@
 """Perfiles compartibles de la comunidad.
 
-Un perfil NO es una copia: es la descripcion del aspecto, sin archivos de tema,
-sin rutas y sin datos personales. Se comparte como `profile.json` (+ portada) y
-se aplica con el mismo motor de restauracion.
+Un perfil es un bundle saneado: apariencia, fondo, layout, atajos seguros y
+plugins declarados. No incluye historial, tokens, configuracion interna de
+shells, capturas del escritorio ni rutas personales.
 
 Regla de oro: lo que no este en la lista blanca de campos, no se exporta.
 """
@@ -121,6 +121,46 @@ def safe_value(value: str) -> bool:
     return not _UNSAFE.search(text)
 
 
+_SECRET_TEXT = re.compile(
+    r"(?i)(token|password|passwd|secret|api[_-]?key|authorization|bearer|"
+    r"ssh-|id_rsa|id_ed25519|\.ssh|\.env|file://|https?://|@[^ ]+\.[^ ]+)"
+)
+_KEYBIND_PATH = re.compile(r"(^|[\s\"'])(~|/|\$HOME|\.\/|\.\./)")
+
+
+def safe_keybind(entry: dict) -> bool:
+    """True si el atajo no contiene rutas, URLs, secretos ni scripts."""
+    if entry.get("script"):
+        return False
+    text = " ".join(
+        str(entry.get(key, ""))
+        for key in ("arg", "description", "dispatcher")
+    )
+    if _KEYBIND_PATH.search(text) or _SECRET_TEXT.search(text):
+        return False
+    return safe_value(str(entry.get("combo", "")))
+
+
+def safe_keybinds(entries: list[dict]) -> list[dict]:
+    out: list[dict] = []
+    for entry in entries:
+        if not safe_keybind(entry):
+            continue
+        out.append(
+            {
+                "combo": str(entry.get("combo", "")),
+                "dispatcher": str(entry.get("dispatcher", "")),
+                "arg": str(entry.get("arg", "")),
+                "mode": str(entry.get("mode", "")),
+                "format": str(entry.get("format", "")),
+                "kind": str(entry.get("kind", "")),
+                "description": str(entry.get("description", "")),
+                "safe": True,
+            }
+        )
+    return out
+
+
 @dataclass
 class Profile:
     id: str
@@ -133,6 +173,12 @@ class Profile:
     cover: str = ""
     requires: dict = field(default_factory=dict)
     settings: list[dict] = field(default_factory=list)
+    wallpaper: dict = field(default_factory=dict)
+    appearance: dict = field(default_factory=dict)
+    layout: dict = field(default_factory=dict)
+    keybinds: list[dict] = field(default_factory=list)
+    plugins: list[dict] = field(default_factory=list)
+    assets: list[dict] = field(default_factory=list)
     schema: int = SCHEMA
     created: str = ""
 
@@ -149,6 +195,12 @@ class Profile:
             "preview": {"cover": self.cover, "palette": self.palette},
             "requires": self.requires,
             "settings": self.settings,
+            "wallpaper": self.wallpaper,
+            "appearance": self.appearance,
+            "layout": self.layout,
+            "keybinds": self.keybinds,
+            "plugins": self.plugins,
+            "assets": self.assets,
         }
 
     @classmethod
@@ -165,6 +217,12 @@ class Profile:
             cover=str(preview.get("cover") or ""),
             requires=dict(raw.get("requires") or {}),
             settings=list(raw.get("settings") or []),
+            wallpaper=dict(raw.get("wallpaper") or {}),
+            appearance=dict(raw.get("appearance") or {}),
+            layout=dict(raw.get("layout") or {}),
+            keybinds=list(raw.get("keybinds") or []),
+            plugins=list(raw.get("plugins") or []),
+            assets=list(raw.get("assets") or []),
             schema=int(raw.get("schema", SCHEMA)),
             created=str(raw.get("created", "")),
         )
@@ -214,7 +272,102 @@ def validate(profile: Profile) -> list[str]:
     if len(profile.settings) > 80:
         problems.append("demasiados ajustes")
 
+    # Wallpaper y recursos embebidos.
+    wallpaper = profile.wallpaper or {}
+    if wallpaper:
+        kind = str(wallpaper.get("kind", ""))
+        if kind not in ("image", "video"):
+            problems.append("wallpaper: tipo inválido")
+        for key in ("file", "fallback"):
+            value = str(wallpaper.get(key, "") or "")
+            if value and not _safe_bundle_path(value):
+                problems.append(f"wallpaper: ruta inválida en {key}")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(wallpaper.get("sha256", ""))):
+            problems.append("wallpaper: falta sha256 válido")
+        try:
+            if int(wallpaper.get("size") or 0) > 60 * 1024 * 1024:
+                problems.append("wallpaper: archivo demasiado grande")
+        except (TypeError, ValueError):
+            problems.append("wallpaper: tamaño inválido")
+        if kind == "video":
+            try:
+                if float(wallpaper.get("duration") or 0) > 10 * 60:
+                    problems.append("wallpaper: video demasiado largo")
+            except (TypeError, ValueError):
+                problems.append("wallpaper: duración inválida")
+
+    for plugin in profile.plugins:
+        if not isinstance(plugin, dict):
+            problems.append("plugin inválido")
+            continue
+        file = str(plugin.get("file", "") or "")
+        target = str(plugin.get("target", "") or "")
+        if not _safe_bundle_path(file) or Path(file).parts[0] != "plugins":
+            problems.append(f"plugin: archivo inválido {file or '(vacío)'}")
+        if not file.endswith((".tar.gz", ".zip")):
+            problems.append("plugin: formato no permitido")
+        if not target.startswith("~/"):
+            problems.append(f"plugin: destino fuera del home {target or '(vacío)'}")
+        if ".." in Path(target).parts:
+            problems.append("plugin: destino con ..")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(plugin.get("sha256", ""))):
+            problems.append("plugin: falta sha256 válido")
+
+    for asset in profile.assets:
+        if not isinstance(asset, dict):
+            problems.append("asset inválido")
+            continue
+        file = str(asset.get("file", "") or "")
+        url = str(asset.get("url", "") or "")
+        if file:
+            if not _safe_bundle_path(file) or Path(file).parts[0] != "assets":
+                problems.append("asset: archivo inválido")
+            if not file.endswith((".tar.gz", ".zip")):
+                problems.append("asset: formato no permitido")
+            target = str(asset.get("target", "") or "")
+            if not target.startswith("~/"):
+                problems.append("asset: destino fuera del home")
+        if url and not (
+            url.startswith("https://github.com/")
+            or url.startswith("https://raw.githubusercontent.com/")
+            or url.startswith("https://objects.githubusercontent.com/")
+            or url.startswith("https://codeload.github.com/")
+        ):
+            problems.append("asset: URL no permitida")
+        if not file and not url:
+            problems.append("asset: falta archivo o URL")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(asset.get("sha256", ""))):
+            problems.append("asset: falta sha256 válido")
+
+    for entry in profile.keybinds:
+        if not isinstance(entry, dict) or not safe_keybind(entry):
+            problems.append("atajo inseguro en el perfil")
+
+    if profile.description and (
+        not safe_value(profile.description) or _SECRET_TEXT.search(profile.description)
+    ):
+        problems.append("descripción con ruta o dato sospechoso")
+    if profile.name and not safe_value(profile.name):
+        problems.append("nombre con ruta o dato sospechoso")
+
     return problems
+
+
+def _safe_bundle_path(value: str) -> bool:
+    path = Path(str(value or ""))
+    if not path.parts or path.is_absolute() or ".." in path.parts:
+        return False
+    if path.parts[0] in ("plugins", "assets"):
+        return len(path.parts) >= 2
+    return path.name in (
+        "wallpaper.jpg",
+        "wallpaper.jpeg",
+        "wallpaper.png",
+        "wallpaper.webp",
+        "wallpaper.mp4",
+        "cover.jpg",
+        "cover.png",
+    )
 
 
 # ------------------------------------------------------------------ exportar
@@ -402,10 +555,25 @@ def build_profile(
     else:
         settings = []
 
+    appearance = {
+        "icon_theme": str(themes.get("icons", "") or requires.get("icons", "")),
+        "cursor_theme": str(themes.get("cursor", "") or requires.get("cursor", "")),
+        "gtk_theme": str(themes.get("gtk", "") or requires.get("gtk", "")),
+        "color_scheme": str(themes.get("color_scheme", "") or requires.get("color_scheme", "")),
+        "plasma_style": str(themes.get("plasma", "") or requires.get("plasma_style", "")),
+    }
+    appearance = {key: value for key, value in appearance.items() if value}
+    keybinds = safe_keybinds(manifest.keybinds)
+    layout = _safe_layout(manifest.containers, manifest.widgets)
+
     # nunca compartimos el historial de otras categorias
     descartados = len(manifest.items) - len(settings)
     if descartados > 0:
         dropped.append(f"{descartados} elementos de la copia no se comparten (archivos, rutas, historial)")
+    if manifest.keybinds and not keybinds:
+        dropped.append("los atajos se omitieron por contener rutas, comandos o datos personales")
+    elif len(keybinds) < len(manifest.keybinds):
+        dropped.append(f"{len(manifest.keybinds) - len(keybinds)} atajos se omitieron por privacidad")
 
     palette = _palette_from_colors(store, manifest, str(requires.get("color_scheme", "")))
 
@@ -420,11 +588,57 @@ def build_profile(
         cover="cover.png" if include_cover else "",
         requires=requires,
         settings=settings,
+        appearance=appearance,
+        layout=layout,
+        keybinds=keybinds,
         created=datetime.now().date().isoformat(),
     )
     if not include_cover:
         dropped.append("la captura del escritorio no se comparte (puede tener tu fondo)")
     return profile, dropped
+
+
+def _safe_layout(containers: list[dict], widgets: list[dict]) -> dict:
+    safe_containers = []
+    for container in containers:
+        safe_containers.append(
+            {
+                key: container.get(key)
+                for key in (
+                    "id",
+                    "kind",
+                    "name",
+                    "location",
+                    "screen",
+                    "size",
+                    "floating",
+                    "visibility",
+                    "alignment",
+                    "length",
+                    "order",
+                    "widgets",
+                )
+                if container.get(key) not in (None, "", [])
+            }
+        )
+    safe_widgets = []
+    for widget in widgets:
+        safe_widgets.append(
+            {
+                key: widget.get(key)
+                for key in (
+                    "id",
+                    "name",
+                    "kind",
+                    "container",
+                    "position",
+                    "installed",
+                    "hidden",
+                )
+                if widget.get(key) not in (None, "")
+            }
+        )
+    return {"containers": safe_containers, "widgets": safe_widgets}
 
 
 def default_export_dir() -> Path:
@@ -444,18 +658,47 @@ def export_bundle(
     *,
     manifest: Manifest | None = None,
     store: BlobStore | None = None,
+    include_wallpaper: bool = True,
+    include_plugins: bool = True,
+    include_cover: bool | None = None,
 ) -> Path:
-    """Escribe profile.json (+ cover.png si se pidio) en `directory`."""
+    """Escribe profile.json + wallpaper + plugins en `directory`."""
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    if include_cover is None:
+        include_cover = bool(profile.cover)
+
+    if manifest is not None and store is not None:
+        from .profile_bundle import prepare_assets, prepare_plugins, prepare_wallpaper
+
+        if include_wallpaper:
+            prepare_wallpaper(
+                profile,
+                manifest,
+                store,
+                directory,
+                include_cover=include_cover,
+            )
+        if include_plugins:
+            profile.plugins = prepare_plugins(profile, manifest, store, directory)
+            profile.assets = prepare_assets(profile, manifest, store, directory)
+        if include_cover and not profile.wallpaper:
+            # Nunca usar una captura del escritorio como portada.
+            profile.cover = ""
+
     problems = validate(profile)
     if problems:
         raise ValueError("perfil invalido: " + "; ".join(problems))
 
-    directory.mkdir(parents=True, exist_ok=True)
     (directory / "profile.json").write_text(
         json.dumps(profile.to_dict(), indent=2, ensure_ascii=False)
     )
 
-    if profile.cover and manifest is not None and store is not None:
+    cover_name = profile.cover
+    if cover_name and manifest is not None and store is not None:
+        target = directory / cover_name
+        if target.is_file():
+            return directory / "profile.json"
         preview = manifest.preview or {}
         rel = str(preview.get("cover") or preview.get("screenshot") or "")
         base = store.root
@@ -467,7 +710,7 @@ def export_bundle(
             and is_within(source, base)
             and source.is_file()
         ):
-            (directory / "cover.png").write_bytes(source.read_bytes())
+            target.write_bytes(source.read_bytes())
     return directory / "profile.json"
 
 

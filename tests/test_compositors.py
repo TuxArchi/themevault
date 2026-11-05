@@ -270,8 +270,8 @@ def test_perfil_niri_no_exporta_atajos(fake_home):
     text = json.dumps(profile.to_dict(), ensure_ascii=False)
     assert profile.desktop == "niri"
     assert profile.settings == []
-    assert "keybinds" not in text
-    assert "Mod+Return" not in text
+    assert any(entry["combo"] == "Mod+Return" for entry in profile.keybinds)
+    assert all(entry.get("safe") for entry in profile.keybinds)
     assert "config.kdl" not in text
     assert dropped
 

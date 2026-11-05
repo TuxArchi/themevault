@@ -90,7 +90,10 @@ Popup {
 
     function desktopLabel(value) {
         var names = { kde: "KDE Plasma", gnome: "GNOME", xfce: "Xfce", cinnamon: "Cinnamon",
-                      mate: "MATE", budgie: "Budgie", lxqt: "LXQt", other: "Otro" }
+                      mate: "MATE", budgie: "Budgie", lxqt: "LXQt", i3: "i3",
+                      openbox: "Openbox", cosmic: "COSMIC", hyprland: "Hyprland",
+                      niri: "niri", sway: "Sway", river: "River", wayfire: "Wayfire",
+                      labwc: "labwc", other: "Otro" }
         return names[value] || value || ""
     }
 
@@ -369,7 +372,7 @@ Popup {
                             }
 
                             Text {
-                                text: "Una captura del escritorio puede mostrar tu fondo. Mirala antes."
+                                text: "La portada se genera desde el fondo, no desde una captura de tus ventanas."
                                 color: Theme.textFaint
                                 font.pixelSize: 10
                             }
@@ -458,10 +461,11 @@ Popup {
 
                                     Text {
                                         Layout.fillWidth: true
-                                        text: (dlg.preview.settingsCount || 0)
-                                              + ((dlg.preview.settingsCount || 0) === 1 ? " ajuste" : " ajustes")
-                                              + "  ·  " + dlg.license
-                                              + (dlg.preview.hasCover ? "  ·  con portada" : "  ·  sin portada")
+                                        text: (dlg.preview.settingsCount || 0) + " ajustes"
+                                              + "  ·  " + (dlg.preview.hasWallpaper ? "fondo " + dlg.preview.wallpaperKind : "sin fondo")
+                                              + "  ·  " + (dlg.preview.pluginCount || 0) + " plugins"
+                                              + "  ·  " + (dlg.preview.keybindCount || 0) + " atajos"
+                                              + "  ·  " + (dlg.preview.layoutCount || 0) + " paneles"
                                         color: Theme.textFaint
                                         font.pixelSize: 10
                                         elide: Text.ElideRight
@@ -676,7 +680,10 @@ Popup {
                         spacing: 6
 
                         Text {
-                            text: "profile.json" + (dlg.preview.hasCover ? " + cover.png" : "")
+                            text: "profile.json"
+                                  + (dlg.preview.hasWallpaper ? " + fondo" : "")
+                                  + (dlg.preview.pluginCount > 0 ? " + plugins" : "")
+                                  + (dlg.preview.hasCover ? " + portada" : "")
                             color: Theme.text
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
