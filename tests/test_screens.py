@@ -104,6 +104,92 @@ def test_hyprctl(monkeypatch):
     assert found[0].width == 2560
 
 
+NIRI_OUTPUTS = json.dumps(
+    {
+        "DP-1": {
+            "logical": {
+                "x": 0,
+                "y": 0,
+                "width": 2560,
+                "height": 1440,
+                "scale": 1.0,
+            }
+        },
+        "HDMI-A-1": {
+            "logical": {
+                "x": 2560,
+                "y": 0,
+                "width": 1920,
+                "height": 1080,
+                "scale": 1.0,
+            }
+        },
+        "DP-2": {"logical": None},
+    }
+)
+
+SWAY_OUTPUTS = json.dumps(
+    [
+        {
+            "name": "DP-1",
+            "active": True,
+            "rect": {"x": 0, "y": 0, "width": 1920, "height": 1080},
+            "scale": 1.0,
+        },
+        {
+            "name": "HDMI-A-1",
+            "active": True,
+            "rect": {"x": 1920, "y": 0, "width": 1920, "height": 1080},
+            "scale": 1.0,
+        },
+    ]
+)
+
+WLR_OUTPUTS = json.dumps(
+    [
+        {
+            "name": "DP-1",
+            "enabled": True,
+            "position": {"x": 0, "y": 0},
+            "modes": [{"width": 1920, "height": 1080, "current": True}],
+            "scale": 1.0,
+        }
+    ]
+)
+
+
+def test_niri(monkeypatch):
+    monkeypatch.setattr(
+        screens, "which", lambda *names: "/usr/bin/niri" if "niri" in names else None
+    )
+    monkeypatch.setattr(screens, "run", fake_run(NIRI_OUTPUTS))
+    found = screens.detect()
+    assert [item.name for item in found] == ["DP-1", "HDMI-A-1"]
+    assert found[1].x == 2560
+
+
+def test_sway(monkeypatch):
+    monkeypatch.setattr(
+        screens, "which", lambda *names: "/usr/bin/swaymsg" if "swaymsg" in names else None
+    )
+    monkeypatch.setattr(screens, "run", fake_run(SWAY_OUTPUTS))
+    found = screens.detect()
+    assert [item.name for item in found] == ["DP-1", "HDMI-A-1"]
+    assert found[1].x == 1920
+
+
+def test_wlr_randr(monkeypatch):
+    monkeypatch.setattr(
+        screens,
+        "which",
+        lambda *names: "/usr/bin/wlr-randr" if "wlr-randr" in names else None,
+    )
+    monkeypatch.setattr(screens, "run", fake_run(WLR_OUTPUTS))
+    found = screens.detect()
+    assert found[0].name == "DP-1"
+    assert found[0].width == 1920
+
+
 def test_sin_herramientas(monkeypatch):
     monkeypatch.setattr(screens, "which", lambda *names: None)
     assert screens.detect() == []

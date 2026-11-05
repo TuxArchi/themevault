@@ -18,9 +18,10 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.5.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
-> integración headless. Hay soporte para GNOME, Xfce y Hyprland, con menos
-> horas de prueba real: los reportes son bienvenidos.
+> Estado: **v0.6.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> integración headless. Hay soporte para GNOME, Xfce, Hyprland, niri, Sway,
+> River, Wayfire y labwc, con menos horas de prueba real en los compositores
+> Wayland: los reportes son bienvenidos.
 
 ---
 
@@ -37,17 +38,26 @@ manera:
 | Xfce | **xfconf** (XML por canal + demonio) | `xfconf-query -p … -s` |
 | KDE Plasma | INI en `~/.config` + árboles en `~/.local/share` | copiar archivos |
 | Hyprland | `~/.config/hypr` + ecosistema (Waybar, lanzadores, notificaciones) | copiar solo configuración |
+| niri | `~/.config/niri/config.kdl` + includes y shells | copiar solo configuración |
+| Sway | `~/.config/sway/config` + `config.d` | copiar solo configuración |
+| River | `~/.config/river/init` | copiar solo configuración |
+| Wayfire | `~/.config/wayfire.ini` + `wf-shell.ini` | copiar solo configuración |
+| labwc | `~/.config/labwc/rc.xml` + `autostart` | copiar solo configuración |
 | WMs / dotfiles | `~/.config/<wm>/` | copiar archivos |
 
 Un backup que solo copia archivos deja los temas *instalados pero no
 aplicados*. ThemeVault guarda ambas cosas: los **archivos** y los **ajustes
 lógicos**.
 
-En Hyprland el respaldo es **solo de configuración**: una lista blanca de
-archivos de texto. No se copian fotos, wallpapers, documentos, notas, scripts,
-claves ni historiales como elementos restaurables. Los atajos de teclado sí se
-guardan e interpretan, y aparecen en el detalle de la copia. La portada con
-fondo es opcional; con `--no-preview` no se guarda ninguna imagen.
+En los compositores Wayland el respaldo es **solo de configuración**: una lista
+blanca de archivos de texto. No se copian fotos, wallpapers, documentos, notas,
+scripts, claves ni historiales como elementos restaurables. Los atajos de
+teclado sí se guardan e interpretan, y aparecen en el detalle de la copia. La
+portada con fondo es opcional; con `--no-preview` no se guarda ninguna imagen.
+
+Las shells de Wayland se comparten entre compositores: Waybar, Noctalia,
+DankMaterialShell, Quickshell, AGS, fuzzel, wofi/rofi, notificaciones,
+terminales y estilos Qt/GTK.
 
 ---
 
@@ -135,6 +145,11 @@ Flujos:
   junto con Waybar, lanzadores, notificaciones, terminales y estilos Qt/GTK.
   Los **atajos de teclado personalizados** se muestran con su combinación,
   dispatcher y comentario. Waybar aparece como barra con sus módulos.
+- **niri, Sway, River, Wayfire y labwc**: cada uno con su formato de
+  configuración e includes. Se extraen atajos, cursor, fondos de autostart y
+  la barra de Sway/Waybar; en niri y Sway se detectan los monitores reales.
+- **Shells Wayland**: Noctalia, DankMaterialShell, Quickshell y AGS se
+  respaldan junto con Waybar para todos los compositores.
 - **Restaurar**: abre el plan, muestra qué se puede aplicar, qué queda
   bloqueado y qué temas faltan en este sistema. Se elige por categoría y hay
   un switch para crear el punto de retorno previo.
@@ -186,6 +201,7 @@ themevault detect                    # distro, DE, herramientas y activos
 themevault backup -m "catppuccin"    # crear copia (con captura y paleta)
 themevault backup --no-preview       # solo configuración, sin captura ni fondo
 themevault backup -a hyprland        # forzar el adaptador de Hyprland
+themevault backup -a niri            # también: sway, river, wayfire, labwc
 themevault list                      # galería en texto, con muestras de color
 themevault show 20261101-100217-kde  # detalle por categoría
 themevault restore <id> --dry-run    # ver el plan sin tocar nada
@@ -328,14 +344,26 @@ src/themevault/
 ├── preview.py       captura, wallpaper, paleta
 ├── cover.py         portada compuesta (cursor + iconos + paleta)
 ├── widgets.py       paneles, widgets y geometría por DE
+├── ecosystem.py     apps y shells Wayland compartidas
+├── keybinds.py      normalización y rebuild de atajos
 ├── hypr.py          parser de Hyprland y atajos de teclado
+├── niri.py          parser KDL de niri
+├── sway.py          parser de Sway
+├── river.py         parser de River
+├── wayfire.py       parser de Wayfire
+├── labwc.py         parser de labwc
 ├── privacy.py       lista blanca de configuración segura
 ├── backup.py        motor de respaldo
 ├── restore.py       plan, aplicación, rollback
 ├── adapters/
 │   ├── base.py      Collector + contrato de adaptador
 │   ├── gnome.py     dconf
-│   ├── hyprland.py  configuración y ecosistema de Hyprland
+│   ├── hyprland.py  configuración de Hyprland
+│   ├── niri.py      configuración de niri
+│   ├── sway.py      configuración de Sway
+│   ├── river.py     configuración de River
+│   ├── wayfire.py   configuración de Wayfire
+│   ├── labwc.py     configuración de labwc
 │   ├── kde.py       INI + árboles
 │   └── xfce.py      xfconf
 └── ui/
@@ -382,6 +410,8 @@ Y registrarlo en `adapters/__init__.py`. No hay que tocar el core ni la GUI.
   widgets ocultos, detección de instalación) y de Xfce.
 - `tests/test_cover.py`: composición de la portada, captura negra descartada,
   búsqueda de iconos en un tema falso.
+- `tests/test_compositors.py`: niri, Sway, River, Wayfire y labwc, includes,
+  atajos, shells Wayland y filtro de archivos personales.
 
 ---
 
@@ -464,7 +494,7 @@ distribución y mandar un pull request.
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| 1 | Core + CLI, adaptadores GNOME/KDE/XFCE/Hyprland, previews, restore seguro | **hecho** |
+| 1 | Core + CLI, adaptadores GNOME/KDE/XFCE/Hyprland/niri/Sway/River/Wayfire/labwc, previews, restore seguro | **hecho** |
 | 2 | GUI Qt6/QML: galería, detalle, restore selectivo | **hecho** |
 | 3 | Resolver de paquetes (apt/dnf/pacman/zypper), restore cruzado entre DEs | pendiente |
 | 3.5 | Widgets, paneles y geometría + portada compuesta | **hecho** |
@@ -485,6 +515,13 @@ distribución y mandar un pull request.
   reiniciá la sesión.
 - Hyprland: la captura usa un workspace especial temporal para ocultar
   ventanas. Si `hyprctl` no responde, se captura la pantalla tal cual.
+- niri, Sway, River, Wayfire y labwc no tienen un “mostrar escritorio” seguro:
+  la captura puede incluir ventanas; la portada usa el fondo si falla.
+- River y labwc se respaldan con sus archivos de configuración aunque parte de
+  su personalización sea código/script de arranque. No se copian otros scripts
+  fuera de sus carpetas de configuración.
+- Wayfire y labwc se recargan al reiniciar el compositor o con su comando
+  específico; no se ejecuta nada automáticamente.
 - Waybar con una configuración distinta por salida se interpreta como una sola
   barra en el detalle; los archivos se respaldan igual.
 - Los temas de `/usr/share` deben existir en la máquina destino; si no, se verá

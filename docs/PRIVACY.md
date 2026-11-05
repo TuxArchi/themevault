@@ -62,17 +62,19 @@ perfil ni ningún dato tuyo: la publicación sigue siendo manual.
 
 Todo es local y se puede borrar sin afectar al sistema.
 
-### Hyprland
+### Compositores Wayland
 
-Las copias de Hyprland incluyen **solo archivos de configuración** de una lista
-blanca: `hyprland.conf`, sus `source` dentro de `$HOME`, Waybar, lanzadores,
-notificaciones, terminales y estilos Qt/GTK.
+Las copias de Hyprland, niri, Sway, River, Wayfire y labwc incluyen **solo
+archivos de configuración** de una lista blanca: el archivo principal, sus
+includes dentro de `$HOME`, Waybar, Noctalia, DankMaterialShell, Quickshell,
+AGS, lanzadores, notificaciones, terminales y estilos Qt/GTK.
 
 Nunca se copian como archivos restaurables:
 
 - fotos, wallpapers, videos, audio ni PDFs;
 - documentos, notas ni historiales;
-- scripts (`*.sh`, `*.py`, `*.lua`, binarios);
+- scripts (`*.sh`, `*.py`, `*.lua`, binarios), salvo los archivos de arranque
+  oficiales de River (`init`) y labwc (`autostart`);
 - claves SSH/GPG, credenciales, `.env`, `authorized_keys` ni similares;
 - archivos incluidos con `source` fuera de `$HOME` o en carpetas personales.
 
@@ -80,9 +82,10 @@ Los atajos de teclado se guardan en el manifest y se muestran en el detalle,
 pero **no se incluyen en los perfiles compartidos**. Si un atajo apunta a un
 script, el script queda fuera y se lista solo como dependencia externa.
 
-La portada es opcional. Si se activa, la captura se hace en un workspace
-especial temporal y el fondo se copia únicamente dentro de `preview/` para
-generar la imagen. Con `--no-preview` no se guarda ninguna imagen.
+La portada es opcional. En Hyprland la captura se hace en un workspace
+especial temporal; en el resto de compositores puede incluir ventanas. El
+fondo se copia únicamente dentro de `preview/` para generar la imagen. Con
+`--no-preview` no se guarda ninguna imagen.
 
 ## Cómo revocar un perfil publicado
 

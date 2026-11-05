@@ -3,6 +3,29 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.6.0] - 2026-11-05
+
+### Agregado
+
+- **niri**: configuración KDL, includes, atajos, cursor, comandos de arranque
+  y fondos de autostart.
+- **Sway**: config + `config.d`, variables, `bindsym`/`bindcode`, modos,
+  barra integrada, cursor y fondos.
+- **River**: `~/.config/river/init`, mapas normales, `map-pointer`, modos,
+  cursor y autostart.
+- **Wayfire**: `wayfire.ini`, bindings de `[command]`, cursor, `wf-shell.ini`
+  y autostart.
+- **labwc**: `rc.xml`, keybinds XML, `autostart`, `themerc` y cursor.
+- **Shells Wayland compartidas**: Waybar, Noctalia, DankMaterialShell,
+  Quickshell y AGS para todos los compositores.
+- Detección de monitores con `niri`, `swaymsg` y `wlr-randr`.
+- Perfiles de comunidad para los nuevos escritorios.
+
+### Cambiado
+
+- Los atajos de todos los compositores usan el mismo `Manifest.keybinds`.
+- El rebuild de atajos reconstruye el formato correcto de cada compositor.
+
 ## [0.5.0] - 2026-11-04
 
 ### Agregado
@@ -281,6 +304,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.6.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.6.0
 [0.5.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.5.0
 [0.4.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.4.1
 [0.4.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.4.0

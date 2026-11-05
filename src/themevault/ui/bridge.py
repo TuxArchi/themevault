@@ -602,6 +602,11 @@ class Backend(QObject):
             ("xfconf-query", "Xfce"),
             ("gsettings", "GNOME"),
             ("hyprctl", "Hyprland"),
+            ("niri", "niri"),
+            ("swaymsg", "Sway"),
+            ("riverctl", "River"),
+            ("wayfire", "Wayfire"),
+            ("labwc", "labwc"),
             (screenshot_tool() or "-", "capturas de portada"),
         ]
         return [{"name": name, "purpose": purpose, "ok": bool(which(name))} for name, purpose in tools]
