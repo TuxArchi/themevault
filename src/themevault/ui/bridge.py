@@ -607,6 +607,9 @@ class Backend(QObject):
             ("riverctl", "River"),
             ("wayfire", "Wayfire"),
             ("labwc", "labwc"),
+            ("i3-msg", "i3"),
+            ("openbox", "Openbox"),
+            ("cosmic-settings", "COSMIC"),
             (screenshot_tool() or "-", "capturas de portada"),
         ]
         return [{"name": name, "purpose": purpose, "ok": bool(which(name))} for name, purpose in tools]

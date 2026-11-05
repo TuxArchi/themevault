@@ -36,6 +36,9 @@ DESKTOPS = (
     "mate",
     "budgie",
     "lxqt",
+    "i3",
+    "openbox",
+    "cosmic",
     "other",
 )
 

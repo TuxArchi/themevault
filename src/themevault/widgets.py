@@ -819,7 +819,7 @@ def from_items(items: list[Item], store) -> dict:
             waybar_config = read(item)
         elif (item.meta or {}).get("waybar_config"):
             waybar_config = read(item)
-        elif source.endswith("/sway/config"):
+        elif source.endswith("/sway/config") or source.endswith("/i3/config"):
             sway_config = read(item)
 
     if appletsrc:

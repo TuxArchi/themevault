@@ -62,19 +62,20 @@ perfil ni ningún dato tuyo: la publicación sigue siendo manual.
 
 Todo es local y se puede borrar sin afectar al sistema.
 
-### Compositores Wayland
+### Escritorios y compositores
 
-Las copias de Hyprland, niri, Sway, River, Wayfire y labwc incluyen **solo
-archivos de configuración** de una lista blanca: el archivo principal, sus
-includes dentro de `$HOME`, Waybar, Noctalia, DankMaterialShell, Quickshell,
-AGS, lanzadores, notificaciones, terminales y estilos Qt/GTK.
+Las copias de Hyprland, niri, Sway, River, Wayfire, labwc, Cinnamon, MATE,
+Budgie, LXQt, i3, Openbox y COSMIC incluyen **solo configuración** de una lista
+blanca: el archivo principal, sus includes dentro de `$HOME`, ajustes de
+apariencia, atajos, Waybar, Noctalia, DankMaterialShell, Quickshell, AGS,
+lanzadores, notificaciones, terminales y estilos Qt/GTK.
 
 Nunca se copian como archivos restaurables:
 
 - fotos, wallpapers, videos, audio ni PDFs;
 - documentos, notas ni historiales;
 - scripts (`*.sh`, `*.py`, `*.lua`, binarios), salvo los archivos de arranque
-  oficiales de River (`init`) y labwc (`autostart`);
+  oficiales de River (`init`), labwc (`autostart`) y Openbox (`autostart`);
 - claves SSH/GPG, credenciales, `.env`, `authorized_keys` ni similares;
 - archivos incluidos con `source` fuera de `$HOME` o en carpetas personales.
 

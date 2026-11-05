@@ -90,7 +90,7 @@ def bind_entry(
 
 def keybinds_from_items(items, store) -> list[dict]:
     """Reconstruye atajos de todos los compositores de una copia."""
-    from . import hypr, labwc, niri, river, sway, wayfire
+    from . import cosmic, dconf_keys, hypr, labwc, lxqt, niri, river, sway, wayfire
 
     groups: dict[str, list] = {}
     for item in items:
@@ -108,6 +108,9 @@ def keybinds_from_items(items, store) -> list[dict]:
             "river": river,
             "wayfire": wayfire,
             "labwc": labwc,
+            "lxqt": lxqt,
+            "cosmic": cosmic,
+            "dconf": dconf_keys,
         }.get(fmt)
         if module is None or not hasattr(module, "keybinds_from_items"):
             continue

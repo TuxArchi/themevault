@@ -64,6 +64,16 @@ WALLPAPER_RE = re.compile(
     re.IGNORECASE,
 )
 
+X11_WALLPAPER_RE = re.compile(
+    r"(?:feh[^\n]*?|nitrogen[^\n]*?|xwallpaper[^\n]*?|hsetroot[^\n]*?)\s+[\"']?([^\"'\s]+)",
+    re.IGNORECASE,
+)
+
+IMAGE_PATH_RE = re.compile(
+    r"((?:~|/)[^\s\"'\n]+?\.(?:png|jpe?g|webp|avif))",
+    re.IGNORECASE,
+)
+
 
 def gtk_values() -> dict[str, str]:
     path = expand("~/.config/gtk-3.0/settings.ini")
@@ -113,6 +123,37 @@ def wallpapers_from_text(text: str) -> list[Path]:
         if not raw or raw.startswith("-"):
             continue
         candidate = expand(raw)
+        if candidate.is_file() and candidate not in found:
+            found.append(candidate)
+    for match in IMAGE_PATH_RE.finditer(text):
+        candidate = expand(match.group(1))
+        if candidate.is_file() and candidate not in found:
+            found.append(candidate)
+    return found
+
+
+def x11_wallpapers_from_text(text: str) -> list[Path]:
+    """Busca fondos en comandos de X11: feh, nitrogen, xwallpaper, hsetroot."""
+    found: list[Path] = []
+    for match in X11_WALLPAPER_RE.finditer(text):
+        raw = match.group(1).strip().strip("'\"")
+        if not raw or raw.startswith("-"):
+            continue
+        candidate = expand(raw)
+        if candidate.is_file() and candidate not in found:
+            found.append(candidate)
+    for match in IMAGE_PATH_RE.finditer(text):
+        candidate = expand(match.group(1))
+        if candidate.is_file() and candidate not in found:
+            found.append(candidate)
+    return found
+
+
+def images_from_text(text: str) -> list[Path]:
+    """Busca rutas de imagen existentes dentro de configuraciones RON/JSON."""
+    found: list[Path] = []
+    for match in IMAGE_PATH_RE.finditer(text):
+        candidate = expand(match.group(1))
         if candidate.is_file() and candidate not in found:
             found.append(candidate)
     return found
