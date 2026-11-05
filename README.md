@@ -18,10 +18,10 @@ cualquiera de ellas.
 
 ![Galería](docs/galeria.png)
 
-> Estado: **v0.6.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
-> integración headless. Hay soporte para GNOME, Xfce, Hyprland, niri, Sway,
-> River, Wayfire y labwc, con menos horas de prueba real en los compositores
-> Wayland: los reportes son bienvenidos.
+> Estado: **v0.7.0**. Probado sobre KDE Plasma 6 (Wayland) y con tests de
+> integración headless. Hay soporte para GNOME, Xfce, Cinnamon, MATE, Budgie,
+> LXQt, COSMIC, Hyprland, niri, Sway, River, Wayfire y labwc, con menos horas
+> de prueba real en algunos entornos: los reportes son bienvenidos.
 
 ---
 
@@ -34,7 +34,7 @@ manera:
 |---|---|---|
 | Temas, iconos, cursores | `~/.themes`, `~/.icons`, `~/.local/share/{themes,icons}` | copiar árboles |
 | Fuentes de usuario | `~/.local/share/fonts`, `~/.config/fontconfig` | copiar árboles |
-| GNOME / Cinnamon / MATE | **dconf** (binario), incluye extensiones y dock | `dconf load` |
+| GNOME / Cinnamon / MATE / Budgie | **dconf** (binario), incluye extensiones y dock | `dconf load` |
 | Xfce | **xfconf** (XML por canal + demonio) | `xfconf-query -p … -s` |
 | KDE Plasma | INI en `~/.config` + árboles en `~/.local/share` | copiar archivos |
 | Hyprland | `~/.config/hypr` + ecosistema (Waybar, lanzadores, notificaciones) | copiar solo configuración |
@@ -43,6 +43,10 @@ manera:
 | River | `~/.config/river/init` | copiar solo configuración |
 | Wayfire | `~/.config/wayfire.ini` + `wf-shell.ini` | copiar solo configuración |
 | labwc | `~/.config/labwc/rc.xml` + `autostart` | copiar solo configuración |
+| LXQt | `~/.config/lxqt/*.conf` + PCManFM-Qt | copiar archivos |
+| i3 | `~/.config/i3/config` + `config.d` | copiar configuración |
+| Openbox | `~/.config/openbox/rc.xml` + `autostart` | copiar configuración |
+| COSMIC | `~/.config/cosmic/**` (RON) | copiar archivos |
 | WMs / dotfiles | `~/.config/<wm>/` | copiar archivos |
 
 Un backup que solo copia archivos deja los temas *instalados pero no
@@ -150,6 +154,10 @@ Flujos:
   la barra de Sway/Waybar; en niri y Sway se detectan los monitores reales.
 - **Shells Wayland**: Noctalia, DankMaterialShell, Quickshell y AGS se
   respaldan junto con Waybar para todos los compositores.
+- **Cinnamon, MATE y Budgie**: dconf, paneles, applets/extensions y atajos.
+- **LXQt**: configuración INI, panel, PCManFM-Qt y atajos globales.
+- **i3 y Openbox**: config X11, includes, atajos y fondos de autostart.
+- **COSMIC**: archivos RON, atajos personalizados, paneles y fondos.
 - **Restaurar**: abre el plan, muestra qué se puede aplicar, qué queda
   bloqueado y qué temas faltan en este sistema. Se elige por categoría y hay
   un switch para crear el punto de retorno previo.
@@ -202,6 +210,7 @@ themevault backup -m "catppuccin"    # crear copia (con captura y paleta)
 themevault backup --no-preview       # solo configuración, sin captura ni fondo
 themevault backup -a hyprland        # forzar el adaptador de Hyprland
 themevault backup -a niri            # también: sway, river, wayfire, labwc
+themevault backup -a cinnamon        # también: mate, budgie, lxqt, i3, openbox, cosmic
 themevault list                      # galería en texto, con muestras de color
 themevault show 20261101-100217-kde  # detalle por categoría
 themevault restore <id> --dry-run    # ver el plan sin tocar nada
@@ -352,6 +361,9 @@ src/themevault/
 ├── river.py         parser de River
 ├── wayfire.py       parser de Wayfire
 ├── labwc.py         parser de labwc
+├── dconf_keys.py    atajos de Cinnamon / MATE / Budgie
+├── lxqt.py          INI y atajos de LXQt
+├── cosmic.py        atajos RON de COSMIC
 ├── privacy.py       lista blanca de configuración segura
 ├── backup.py        motor de respaldo
 ├── restore.py       plan, aplicación, rollback
@@ -364,6 +376,13 @@ src/themevault/
 │   ├── river.py     configuración de River
 │   ├── wayfire.py   configuración de Wayfire
 │   ├── labwc.py     configuración de labwc
+│   ├── cinnamon.py  dconf de Cinnamon
+│   ├── mate.py      dconf de MATE
+│   ├── budgie.py    dconf de Budgie
+│   ├── lxqt.py      INI de LXQt
+│   ├── i3.py        configuración de i3
+│   ├── openbox.py   XML de Openbox
+│   ├── cosmic.py    RON de COSMIC
 │   ├── kde.py       INI + árboles
 │   └── xfce.py      xfconf
 └── ui/
@@ -412,6 +431,7 @@ Y registrarlo en `adapters/__init__.py`. No hay que tocar el core ni la GUI.
   búsqueda de iconos en un tema falso.
 - `tests/test_compositors.py`: niri, Sway, River, Wayfire y labwc, includes,
   atajos, shells Wayland y filtro de archivos personales.
+- `tests/test_desktops.py`: Cinnamon, MATE, Budgie, LXQt, i3, Openbox y COSMIC.
 
 ---
 
@@ -498,7 +518,7 @@ distribución y mandar un pull request.
 | 2 | GUI Qt6/QML: galería, detalle, restore selectivo | **hecho** |
 | 3 | Resolver de paquetes (apt/dnf/pacman/zypper), restore cruzado entre DEs | pendiente |
 | 3.5 | Widgets, paneles y geometría + portada compuesta | **hecho** |
-| 4 | Adaptadores Nivel 2 (Cinnamon, MATE, Budgie, LXQt) + modo genérico dotfiles | pendiente |
+| 4 | Adaptadores Nivel 2 (Cinnamon, MATE, Budgie, LXQt, i3, Openbox, COSMIC) + modo genérico dotfiles | **hecho** |
 | 5 | Empaquetado (AppImage, deb/rpm, AUR), i18n | pendiente |
 
 ---
@@ -522,6 +542,12 @@ distribución y mandar un pull request.
   fuera de sus carpetas de configuración.
 - Wayfire y labwc se recargan al reiniciar el compositor o con su comando
   específico; no se ejecuta nada automáticamente.
+- Cinnamon, MATE y Budgie dependen de dconf; sin `dconf` se respaldan los
+  archivos de temas/extensiones, pero no los ajustes lógicos.
+- COSMIC usa RON y sus archivos de configuración no tienen extensión; se
+  respaldan solo archivos de texto dentro de `~/.config/cosmic`.
+- LXQt puede usar distintos window managers; los atajos del WM (Openbox,
+  KWin, Xfwm) se respaldan por separado según el adaptador detectado.
 - Waybar con una configuración distinta por salida se interpreta como una sola
   barra en el detalle; los archivos se respaldan igual.
 - Los temas de `/usr/share` deben existir en la máquina destino; si no, se verá

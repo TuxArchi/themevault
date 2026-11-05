@@ -6,11 +6,18 @@ Para sumar un entorno nuevo alcanza con heredar de `Adapter` y anotarlo aca.
 from __future__ import annotations
 
 from .base import Adapter, Collector
+from .budgie import BudgieAdapter
+from .cinnamon import CinnamonAdapter
+from .cosmic import CosmicAdapter
 from .gnome import GnomeAdapter
 from .hyprland import HyprlandAdapter
+from .i3 import I3Adapter
 from .kde import KdeAdapter
 from .labwc import LabwcAdapter
+from .lxqt import LxqtAdapter
+from .mate import MateAdapter
 from .niri import NiriAdapter
+from .openbox import OpenboxAdapter
 from .river import RiverAdapter
 from .sway import SwayAdapter
 from .wayfire import WayfireAdapter
@@ -21,6 +28,9 @@ REGISTRY: dict[str, type[Adapter]] = {
     for cls in (
         GnomeAdapter,
         KdeAdapter,
+        CinnamonAdapter,
+        MateAdapter,
+        BudgieAdapter,
         HyprlandAdapter,
         NiriAdapter,
         SwayAdapter,
@@ -28,6 +38,10 @@ REGISTRY: dict[str, type[Adapter]] = {
         WayfireAdapter,
         LabwcAdapter,
         XfceAdapter,
+        LxqtAdapter,
+        I3Adapter,
+        OpenboxAdapter,
+        CosmicAdapter,
     )
 }
 

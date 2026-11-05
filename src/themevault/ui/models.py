@@ -46,6 +46,8 @@ DE_LABELS = {
     "pantheon": "Pantheon",
     "deepin": "Deepin",
     "cosmic": "COSMIC",
+    "i3": "i3",
+    "openbox": "Openbox",
     "desconocido": "Desconocido",
 }
 

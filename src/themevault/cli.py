@@ -153,6 +153,9 @@ def cmd_detect(args: argparse.Namespace) -> int:
         ("riverctl", "river"),
         ("wayfire", "wayfire"),
         ("labwc", "labwc"),
+        ("i3-msg", "i3"),
+        ("openbox", "openbox"),
+        ("cosmic-settings", "COSMIC"),
         (screenshot_tool() or "-", "capturas de portada"),
     ]
     for name, purpose in tools:
@@ -312,6 +315,13 @@ def cmd_restore(args: argparse.Namespace) -> int:
         "river",
         "wayfire",
         "labwc",
+        "cinnamon",
+        "mate",
+        "budgie",
+        "lxqt",
+        "i3",
+        "openbox",
+        "cosmic",
     ):
         hints = {
             "hyprland": "Ejecuta `hyprctl reload` o reinicia la sesion.",
@@ -320,6 +330,9 @@ def cmd_restore(args: argparse.Namespace) -> int:
             "river": "Reinicia River para volver a cargar su configuracion.",
             "wayfire": "Reinicia Wayfire para aplicar los cambios.",
             "labwc": "Ejecuta `labwc --reconfigure` o reinicia la sesion.",
+            "i3": "Ejecuta `i3-msg reload` para aplicar los cambios.",
+            "openbox": "Ejecuta `openbox --reconfigure` para aplicar los cambios.",
+            "cosmic": "COSMIC aplica la configuracion al guardar; reinicia la sesion si no.",
         }
         print(dim("\n" + hints.get(manifest.de, "Reinicia la sesion para ver los cambios.")))
     return 0 if report.ok else 1

@@ -3,6 +3,25 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.7.0] - 2026-11-05
+
+### Agregado
+
+- **Cinnamon**, **MATE** y **Budgie**: dconf, apariencia, paneles, applets y
+  atajos personalizados.
+- **LXQt**: configuración INI, PCManFM-Qt, atajos globales y temas.
+- **i3** y **Openbox**: configuración X11, includes, atajos y fondos de
+  autostart.
+- **COSMIC**: archivos RON, atajos personalizados, paneles y fondos.
+- Perfiles de comunidad para los nuevos escritorios.
+- Tests específicos para dconf, INI, XML, RON e i3.
+
+### Cambiado
+
+- La lista de atajos de dconf se reconstruye desde los blobs de la copia.
+- El filtro de privacidad acepta `.kdl`, RON sin extensión y archivos de
+  configuración de shells sin copiar scripts personales.
+
 ## [0.6.0] - 2026-11-05
 
 ### Agregado
@@ -304,6 +323,7 @@ Primer lanzamiento público.
 - No se copian los temas de `/usr/share`: se registra su nombre para avisar si
   faltan en la máquina destino.
 
+[0.7.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.7.0
 [0.6.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.6.0
 [0.5.0]: https://github.com/TuxArchi/themevault/releases/tag/v0.5.0
 [0.4.1]: https://github.com/TuxArchi/themevault/releases/tag/v0.4.1

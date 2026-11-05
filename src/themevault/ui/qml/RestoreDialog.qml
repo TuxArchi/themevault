@@ -802,7 +802,8 @@ Popup {
                 Layout.fillWidth: true
                 visible: dlg.result && !dlg.result.perScreen && dlg.result.applied > 0
                          && dlg.plan && ["kde", "gnome", "hyprland", "niri", "sway",
-                                         "river", "wayfire", "labwc"].indexOf(dlg.plan.de) >= 0
+                                         "river", "wayfire", "labwc", "cinnamon", "mate",
+                                         "budgie", "lxqt", "i3", "openbox", "cosmic"].indexOf(dlg.plan.de) >= 0
                 text: {
                     if (!dlg.plan)
                         return ""
@@ -814,6 +815,12 @@ Popup {
                         return "Ejecutá `swaymsg reload` para aplicar los cambios."
                     if (dlg.plan.de === "labwc")
                         return "Ejecutá `labwc --reconfigure` o reiniciá la sesión."
+                    if (dlg.plan.de === "i3")
+                        return "Ejecutá `i3-msg reload` para aplicar los cambios."
+                    if (dlg.plan.de === "openbox")
+                        return "Ejecutá `openbox --reconfigure` para aplicar los cambios."
+                    if (dlg.plan.de === "cosmic")
+                        return "COSMIC aplica la configuración al guardar; reiniciá la sesión si no."
                     return "Reiniciá la sesión para ver todos los cambios."
                 }
                 color: Theme.textDim
